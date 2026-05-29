@@ -14,6 +14,11 @@ import 'package:flutter/foundation.dart'
 ///   options: DefaultFirebaseOptions.currentPlatform,
 /// );
 /// ```
+/// 
+/// SETUP INSTRUCTIONS:
+/// 1. Copy this file to 'firebase_options.dart' (remove .template)
+/// 2. Replace all 'YOUR_XXX_HERE' placeholders with your actual Firebase credentials
+/// 3. Never commit firebase_options.dart to git (it's in .gitignore)
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -47,29 +52,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBdyppWEtpdG_FyuSAnwcJbHj8clvJ3AVE',
-    appId: '1:342544453468:android:1288cef4d3500905b67b99',
-    messagingSenderId: '342544453468',
-    projectId: 'mata-angin-e1f8d',
-    storageBucket: 'mata-angin-e1f8d.firebasestorage.app',
+    apiKey: 'YOUR_ANDROID_API_KEY_HERE',
+    appId: 'YOUR_ANDROID_APP_ID_HERE',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID_HERE',
+    projectId: 'YOUR_PROJECT_ID_HERE',
+    storageBucket: 'YOUR_STORAGE_BUCKET_HERE',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB6wOuj1LaFwoW7WDnfqHuRUV6m6TSpx4M',
-    appId: '1:342544453468:ios:8d79e8f2964eb668b67b99',
-    messagingSenderId: '342544453468',
-    projectId: 'mata-angin-e1f8d',
-    storageBucket: 'mata-angin-e1f8d.firebasestorage.app',
+    apiKey: 'YOUR_IOS_API_KEY_HERE',
+    appId: 'YOUR_IOS_APP_ID_HERE',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID_HERE',
+    projectId: 'YOUR_PROJECT_ID_HERE',
+    storageBucket: 'YOUR_STORAGE_BUCKET_HERE',
     iosBundleId: 'com.example.frontendMataangin',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA8RIwN1LBnvsnGAXZ5Qcjo_M8Kb3c6by0',
-    appId: '1:342544453468:web:60621eace4711b7bb67b99',
-    messagingSenderId: '342544453468',
-    projectId: 'mata-angin-e1f8d',
-    storageBucket: 'mata-angin-e1f8d.firebasestorage.app',
-    authDomain: 'mata-angin-e1f8d.firebaseapp.com',
-    measurementId: 'G-LL0G9ZLF3J',
+    apiKey: 'YOUR_WEB_API_KEY_HERE',
+    appId: 'YOUR_WEB_APP_ID_HERE',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID_HERE',
+    projectId: 'YOUR_PROJECT_ID_HERE',
+    storageBucket: 'YOUR_STORAGE_BUCKET_HERE',
+    authDomain: 'YOUR_AUTH_DOMAIN_HERE',
+    measurementId: 'YOUR_MEASUREMENT_ID_HERE',
   );
 }
