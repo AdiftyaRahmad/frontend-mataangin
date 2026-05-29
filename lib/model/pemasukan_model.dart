@@ -1,5 +1,5 @@
 class PemasukanModel {
-  final int? id;
+  final String? id;
   final String tanggal;
   final String hari;
   final double cash;
@@ -31,7 +31,7 @@ class PemasukanModel {
 
   factory PemasukanModel.fromJson(Map<String, dynamic> json) {
     return PemasukanModel(
-      id: json['id'],
+      id: json['id']?.toString(),
       tanggal: json['tanggal'] ?? '',
       hari: json['hari'] ?? '',
       cash: double.tryParse(json['cash']?.toString() ?? '0') ?? 0.0,
@@ -60,7 +60,7 @@ class PemasukanModel {
       };
 
   PemasukanModel copyWith({
-    int? id,
+    String? id,
     String? tanggal,
     String? hari,
     double? cash,

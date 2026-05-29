@@ -86,7 +86,14 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
             onPressed: vm.isExporting
                 ? null
                 : () async {
-                    final success = await context.read<LaporanViewModel>().exportPdf();
+                    // Determine which tab is active
+                    final isHarianTab = _tabCtrl.index == 0;
+                    final success = await context.read<LaporanViewModel>().exportPdf(
+                      isHarian: isHarianTab,
+                      selectedDate: _selectedDate,
+                      selectedMonth: _selectedMonth,
+                      selectedYear: _selectedYear,
+                    );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -250,7 +257,6 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
   }
 
   Widget _buildSummaryCards(LaporanModel laporan, NumberFormat fmt) {
-    final saldoColor = laporan.saldo >= 0 ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
 
     return Container(
       margin: const EdgeInsets.all(16),

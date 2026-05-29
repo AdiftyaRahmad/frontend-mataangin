@@ -57,7 +57,7 @@ class PemasukanViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> update(int id, PemasukanModel pemasukan) async {
+  Future<bool> update(String id, PemasukanModel pemasukan) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();
@@ -80,7 +80,7 @@ class PemasukanViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> delete(int id) async {
+  Future<bool> delete(String id) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();

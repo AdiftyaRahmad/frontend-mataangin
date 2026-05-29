@@ -493,7 +493,7 @@ class PemasukanView extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, int id) async {
+  Future<void> _confirmDelete(BuildContext context, String id) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(

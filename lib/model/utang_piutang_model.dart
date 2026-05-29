@@ -1,5 +1,5 @@
 class UtangPiutangModel {
-  final int? id;
+  final String? id;
   final String nama;
   final String tipe; // 'utang' atau 'piutang'
   final double totalTagihan;
@@ -31,7 +31,7 @@ class UtangPiutangModel {
     if (rawTipe == 'customer') rawTipe = 'piutang';
 
     return UtangPiutangModel(
-      id: json['id'],
+      id: json['id']?.toString(),
       nama: json['nama'] ?? json['nama_orang'] ?? json['judul'] ?? '',
       tipe: rawTipe,
       totalTagihan: double.tryParse(json['total_tagihan']?.toString() ?? json['totalTagihan']?.toString() ?? json['jumlah']?.toString() ?? '0') ?? 0.0,
@@ -56,7 +56,7 @@ class UtangPiutangModel {
       };
 
   UtangPiutangModel copyWith({
-    int? id,
+    String? id,
     String? nama,
     String? tipe,
     double? totalTagihan,

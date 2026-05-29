@@ -1,5 +1,5 @@
 class PengeluaranModel {
-  final int? id;
+  final String? id;
   final String namaBarang;
   final double nominal;
   final String? keterangan;
@@ -21,7 +21,7 @@ class PengeluaranModel {
 
   factory PengeluaranModel.fromJson(Map<String, dynamic> json) {
     return PengeluaranModel(
-      id: json['id'],
+      id: json['id']?.toString(),
       namaBarang: json['nama_barang'] ?? json['namaBarang'] ?? json['judul'] ?? json['nama'] ?? '',
       nominal: double.tryParse(json['nominal']?.toString() ?? json['jumlah']?.toString() ?? '0') ?? 0.0,
       keterangan: json['keterangan'],
@@ -40,7 +40,7 @@ class PengeluaranModel {
       };
 
   PengeluaranModel copyWith({
-    int? id,
+    String? id,
     String? namaBarang,
     double? nominal,
     String? keterangan,

@@ -66,12 +66,37 @@ class LaporanViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> exportPdf() async {
+  Future<bool> exportPdf({
+    required bool isHarian,
+    DateTime? selectedDate,
+    int? selectedMonth,
+    int? selectedYear,
+  }) async {
     _exportState = ViewState.loading;
     _exportError = null;
     notifyListeners();
     try {
-      final bytes = await _repository.exportPdfBytes();
+      // Determine which report to export based on active tab
+      LaporanModel laporanToExport;
+      String? periode;
+      
+      if (isHarian) {
+        laporanToExport = _laporanHarian;
+        if (selectedDate != null) {
+          final months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+          periode = '${selectedDate.day} ${months[selectedDate.month - 1]} ${selectedDate.year}';
+        }
+      } else {
+        laporanToExport = _laporanBulanan;
+        if (selectedMonth != null && selectedYear != null) {
+          final months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+          periode = '${months[selectedMonth - 1]} $selectedYear';
+        }
+      }
+      
+      final bytes = await _repository.exportPdfBytes(laporanToExport, periode: periode);
       final now = DateTime.now();
       final fileName = 'laporan_mata_angin_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.pdf';
       saveFile(bytes, fileName, 'application/pdf');

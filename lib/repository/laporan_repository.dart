@@ -4,7 +4,7 @@ import '../service/laporan_service.dart';
 abstract class ILaporanRepository {
   Future<LaporanModel> getHarian(String tanggal);
   Future<LaporanModel> getBulanan(String bulan, String tahun);
-  Future<List<int>> exportPdfBytes();
+  Future<List<int>> exportPdfBytes(LaporanModel laporan, {String? periode});
 }
 
 class LaporanRepository implements ILaporanRepository {
@@ -21,5 +21,6 @@ class LaporanRepository implements ILaporanRepository {
       _service.getBulanan(bulan, tahun);
 
   @override
-  Future<List<int>> exportPdfBytes() => _service.exportPdfBytes();
+  Future<List<int>> exportPdfBytes(LaporanModel laporan, {String? periode}) => 
+      _service.exportPdfBytes(laporan, periode: periode);
 }

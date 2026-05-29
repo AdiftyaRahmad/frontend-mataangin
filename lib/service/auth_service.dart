@@ -1,35 +1,55 @@
-import '../core/network/api_client.dart';
-import '../core/constants/api_constants.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/utils/token_manager.dart';
 import '../model/user_model.dart';
 
 class AuthService {
-  final ApiClient _client;
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
 
-  AuthService({ApiClient? client}) : _client = client ?? ApiClient();
+  AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
+      : _auth = auth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Login — POST /api/login
+  /// Login using Firebase Auth
   Future<UserModel> login(String email, String password) async {
-    final response = await _client.post(
-      ApiConstants.login,
-      {'email': email, 'password': password},
-      auth: false,
+    final userCredential = await _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
     );
-    // Laravel Sanctum response: { token: "...", user: {...} }
-    // Fallback: { data: { token: "...", user: {...} } }
-    final data = response['data'] ?? response;
-    final token = data['token']?.toString() ?? '';
-    final userJson = data['user'] ?? data;
+    
+    final firebaseUser = userCredential.user;
+    if (firebaseUser == null) {
+      throw Exception('Login gagal: User tidak ditemukan');
+    }
 
-    final user = UserModel.fromJson({...userJson, 'token': token});
+    // Get ID token
+    final token = await firebaseUser.getIdToken() ?? '';
+
+    // Fetch user profile from Firestore
+    final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+    if (!userDoc.exists) {
+      throw Exception('Profil user tidak ditemukan di database.');
+    }
+
+    final userData = userDoc.data()!;
+    final user = UserModel(
+      id: firebaseUser.uid,
+      name: userData['name'] ?? firebaseUser.displayName ?? 'No Name',
+      email: firebaseUser.email ?? email,
+      token: token,
+    );
+
+    // Save token and user data locally
     await TokenManager.saveToken(token);
+    await TokenManager.saveUserData(user.name);
     return user;
   }
 
-  /// Logout — POST /api/logout
+  /// Logout using Firebase Auth
   Future<void> logout() async {
     try {
-      await _client.post(ApiConstants.logout, {}, auth: true);
+      await _auth.signOut();
     } finally {
       await TokenManager.clearAll();
     }

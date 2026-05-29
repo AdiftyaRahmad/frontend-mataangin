@@ -3,10 +3,10 @@ import '../service/pengeluaran_service.dart';
 
 abstract class IPengeluaranRepository {
   Future<List<PengeluaranModel>> getAll();
-  Future<PengeluaranModel> getById(int id);
+  Future<PengeluaranModel> getById(String id);
   Future<PengeluaranModel> create(PengeluaranModel pengeluaran);
-  Future<PengeluaranModel> update(int id, PengeluaranModel pengeluaran);
-  Future<void> delete(int id);
+  Future<PengeluaranModel> update(String id, PengeluaranModel pengeluaran);
+  Future<void> delete(String id);
 }
 
 class PengeluaranRepository implements IPengeluaranRepository {
@@ -19,16 +19,16 @@ class PengeluaranRepository implements IPengeluaranRepository {
   Future<List<PengeluaranModel>> getAll() => _service.getAll();
 
   @override
-  Future<PengeluaranModel> getById(int id) => _service.getById(id);
+  Future<PengeluaranModel> getById(String id) => _service.getById(id);
 
   @override
   Future<PengeluaranModel> create(PengeluaranModel pengeluaran) =>
       _service.create(pengeluaran);
 
   @override
-  Future<PengeluaranModel> update(int id, PengeluaranModel pengeluaran) =>
+  Future<PengeluaranModel> update(String id, PengeluaranModel pengeluaran) =>
       _service.update(id, pengeluaran);
 
   @override
-  Future<void> delete(int id) => _service.delete(id);
+  Future<void> delete(String id) => _service.delete(id);
 }

@@ -57,7 +57,7 @@ class PengeluaranViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> update(int id, PengeluaranModel pengeluaran) async {
+  Future<bool> update(String id, PengeluaranModel pengeluaran) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();
@@ -80,7 +80,7 @@ class PengeluaranViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> delete(int id) async {
+  Future<bool> delete(String id) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();

@@ -340,8 +340,11 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
     final keteranganCtrl = TextEditingController(text: item?.keterangan);
 
     String selectedTipe = (item?.tipe ?? 'utang').trim().toLowerCase();
-    if (selectedTipe == 'customer' || selectedTipe == 'piutang') selectedTipe = 'piutang';
-    else selectedTipe = 'utang';
+    if (selectedTipe == 'customer' || selectedTipe == 'piutang') {
+      selectedTipe = 'piutang';
+    } else {
+      selectedTipe = 'utang';
+    }
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -569,7 +572,7 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, UtangPiutangViewModel vm, int id) async {
+  Future<void> _confirmDelete(BuildContext context, UtangPiutangViewModel vm, String id) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(

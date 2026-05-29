@@ -3,10 +3,10 @@ import '../service/utang_piutang_service.dart';
 
 abstract class IUtangPiutangRepository {
   Future<List<UtangPiutangModel>> getAll();
-  Future<UtangPiutangModel> getById(int id);
+  Future<UtangPiutangModel> getById(String id);
   Future<UtangPiutangModel> create(UtangPiutangModel utangPiutang);
-  Future<UtangPiutangModel> update(int id, UtangPiutangModel utangPiutang);
-  Future<void> delete(int id);
+  Future<UtangPiutangModel> update(String id, UtangPiutangModel utangPiutang);
+  Future<void> delete(String id);
 }
 
 class UtangPiutangRepository implements IUtangPiutangRepository {
@@ -19,16 +19,16 @@ class UtangPiutangRepository implements IUtangPiutangRepository {
   Future<List<UtangPiutangModel>> getAll() => _service.getAll();
 
   @override
-  Future<UtangPiutangModel> getById(int id) => _service.getById(id);
+  Future<UtangPiutangModel> getById(String id) => _service.getById(id);
 
   @override
   Future<UtangPiutangModel> create(UtangPiutangModel utangPiutang) =>
       _service.create(utangPiutang);
 
   @override
-  Future<UtangPiutangModel> update(int id, UtangPiutangModel utangPiutang) =>
+  Future<UtangPiutangModel> update(String id, UtangPiutangModel utangPiutang) =>
       _service.update(id, utangPiutang);
 
   @override
-  Future<void> delete(int id) => _service.delete(id);
+  Future<void> delete(String id) => _service.delete(id);
 }

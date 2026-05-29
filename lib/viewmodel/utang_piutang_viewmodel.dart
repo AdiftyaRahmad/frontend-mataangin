@@ -70,7 +70,7 @@ class UtangPiutangViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> update(int id, UtangPiutangModel item) async {
+  Future<bool> update(String id, UtangPiutangModel item) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();
@@ -93,7 +93,7 @@ class UtangPiutangViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> delete(int id) async {
+  Future<bool> delete(String id) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();
