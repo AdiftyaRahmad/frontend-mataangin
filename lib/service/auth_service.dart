@@ -38,11 +38,13 @@ class AuthService {
       name: userData['name'] ?? firebaseUser.displayName ?? 'No Name',
       email: firebaseUser.email ?? email,
       token: token,
+      role: userData['role'] ?? 'operator', // Ambil role dari Firestore
     );
 
     // Save token and user data locally
     await TokenManager.saveToken(token);
     await TokenManager.saveUserData(user.name);
+    await TokenManager.saveUserRole(user.role); // Simpan role
     return user;
   }
 

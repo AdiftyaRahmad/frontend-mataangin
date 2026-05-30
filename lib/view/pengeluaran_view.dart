@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/pengeluaran_model.dart';
 import '../viewmodel/pengeluaran_viewmodel.dart';
+import '../core/widgets/admin_only_widget.dart';
 
 class PengeluaranView extends StatelessWidget {
   const PengeluaranView({super.key});
@@ -458,6 +459,7 @@ class _PengeluaranCard extends StatelessWidget {
               ),
               Row(
                 children: [
+                  // Tombol EDIT - Admin & Operator bisa
                   IconButton(
                     icon: const Icon(
                       Icons.edit_outlined,
@@ -468,15 +470,18 @@ class _PengeluaranCard extends StatelessWidget {
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.all(4),
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 18,
-                      color: Color(0xFFEF4444),
+                  // Tombol DELETE - Hanya Admin
+                  DeleteOnlyWidget(
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: Color(0xFFEF4444),
+                      ),
+                      onPressed: onDelete,
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
                     ),
-                    onPressed: onDelete,
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(4),
                   ),
                 ],
               ),

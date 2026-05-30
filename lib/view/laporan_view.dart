@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/laporan_model.dart';
 import '../viewmodel/laporan_viewmodel.dart';
+import '../core/widgets/admin_only_widget.dart';
 
 class LaporanView extends StatefulWidget {
   const LaporanView({super.key});
@@ -74,39 +75,41 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 20),
         ),
         actions: [
-          IconButton(
-            icon: vm.isExporting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                : const Icon(Icons.picture_as_pdf_outlined, color: Colors.white70),
-            tooltip: 'Export PDF',
-            onPressed: vm.isExporting
-                ? null
-                : () async {
-                    // Determine which tab is active
-                    final isHarianTab = _tabCtrl.index == 0;
-                    final success = await context.read<LaporanViewModel>().exportPdf(
-                      isHarian: isHarianTab,
-                      selectedDate: _selectedDate,
-                      selectedMonth: _selectedMonth,
-                      selectedYear: _selectedYear,
-                    );
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            success
-                                ? 'PDF berhasil diunduh!'
-                                : (vm.exportError ?? 'Gagal mengunduh PDF'),
-                          ),
-                          backgroundColor: success ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
-                        ),
+          AdminOnlyWidget(
+            child: IconButton(
+              icon: vm.isExporting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Icon(Icons.picture_as_pdf_outlined, color: Colors.white70),
+              tooltip: 'Export PDF',
+              onPressed: vm.isExporting
+                  ? null
+                  : () async {
+                      // Determine which tab is active
+                      final isHarianTab = _tabCtrl.index == 0;
+                      final success = await context.read<LaporanViewModel>().exportPdf(
+                        isHarian: isHarianTab,
+                        selectedDate: _selectedDate,
+                        selectedMonth: _selectedMonth,
+                        selectedYear: _selectedYear,
                       );
-                    }
-                  },
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? 'PDF berhasil diunduh!'
+                                  : (vm.exportError ?? 'Gagal mengunduh PDF'),
+                            ),
+                            backgroundColor: success ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                          ),
+                        );
+                      }
+                    },
+            ),
           ),
         ],
         bottom: TabBar(

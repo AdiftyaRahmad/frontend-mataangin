@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/pemasukan_model.dart';
 import '../viewmodel/pemasukan_viewmodel.dart';
+import '../core/widgets/admin_only_widget.dart';
 
 class PemasukanView extends StatelessWidget {
   const PemasukanView({super.key});
@@ -639,6 +640,7 @@ class _PemasukanCard extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Tombol EDIT - Admin & Operator bisa
                         InkWell(
                           onTap: onEdit,
                           child: const Padding(
@@ -648,12 +650,15 @@ class _PemasukanCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        InkWell(
-                          onTap: onDelete,
-                          child: const Padding(
-                            padding: EdgeInsets.all(4),
-                            child: Icon(Icons.delete_outline,
-                                size: 16, color: Color(0xFFEF4444)),
+                        // Tombol DELETE - Hanya Admin
+                        DeleteOnlyWidget(
+                          child: InkWell(
+                            onTap: onDelete,
+                            child: const Padding(
+                              padding: EdgeInsets.all(4),
+                              child: Icon(Icons.delete_outline,
+                                  size: 16, color: Color(0xFFEF4444)),
+                            ),
                           ),
                         ),
                       ],

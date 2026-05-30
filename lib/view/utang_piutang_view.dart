@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/utang_piutang_model.dart';
 import '../viewmodel/utang_piutang_viewmodel.dart';
+import '../core/widgets/admin_only_widget.dart';
 
 class UtangPiutangView extends StatefulWidget {
   const UtangPiutangView({super.key});
@@ -264,17 +265,21 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                 ),
               ),
               const Spacer(),
+              // Tombol EDIT - Admin & Operator bisa
               IconButton(
                 icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.white54),
                 onPressed: () => _showFormDialog(context, item: item),
                 constraints: const BoxConstraints(),
                 padding: const EdgeInsets.all(4),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFEF4444)),
-                onPressed: () => _confirmDelete(context, vm, item.id!),
-                constraints: const BoxConstraints(),
-                padding: const EdgeInsets.all(4),
+              // Tombol DELETE - Hanya Admin
+              DeleteOnlyWidget(
+                child: IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFEF4444)),
+                  onPressed: () => _confirmDelete(context, vm, item.id!),
+                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(4),
+                ),
               ),
             ],
           ),

@@ -59,10 +59,11 @@ service cloud.firestore {
                     && request.resource.data.dp is int
                     && request.resource.data.total_pemasukan is int;
                     
+      // Admin & Operator bisa update
       allow update: if isStaffOrAdmin()
-                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['created_by'])
-                    && (getUserData().role == 'admin' || resource.data.created_by == request.auth.uid);
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['created_by']);
                     
+      // Hanya Admin yang bisa delete
       allow delete: if isSignedIn() && userExists(request.auth.uid) && getUserData().role == 'admin';
     }
     
@@ -75,30 +76,47 @@ service cloud.firestore {
                     && request.resource.data.nominal is int
                     && request.resource.data.tanggal is timestamp;
                     
+      // Admin & Operator bisa update
       allow update: if isStaffOrAdmin()
-                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['created_by'])
-                    && (getUserData().role == 'admin' || resource.data.created_by == request.auth.uid);
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['created_by']);
                     
+      // Hanya Admin yang bisa delete
       allow delete: if isSignedIn() && userExists(request.auth.uid) && getUserData().role == 'admin';
     }
     
     match /utang_piutang/{id} {
       allow read: if isStaffOrAdmin();
       
+      // Create - validasi field wajib
       allow create: if isStaffOrAdmin() 
                     && request.resource.data.created_by == request.auth.uid
                     && request.resource.data.nama_customer is string
                     && request.resource.data.tipe is string
-                    && (request.resource.data.tipe == 'utang' || request.resource.data.tipe == 'piutang')
-                    && request.resource.data.total_tagihan is int
-                    && request.resource.data.dp is int
-                    && request.resource.data.sisa_pembayaran is int
-                    && request.resource.data.status is string;
+                    && (request.resource.data.tipe == 'utang' || request.resource.data.tipe == 'piutang');
                     
+      // Update - Admin & Operator bisa update semua field kecuali created_by
+      // Lebih fleksibel untuk support berbagai field (status, pembayaran, dll)
       allow update: if isStaffOrAdmin()
-                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['created_by'])
-                    && (getUserData().role == 'admin' || resource.data.created_by == request.auth.uid);
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['created_by']) 
+                        || !('created_by' in resource.data));
                     
+      // Hanya Admin yang bisa delete
+      allow delete: if isSignedIn() && userExists(request.auth.uid) && getUserData().role == 'admin';
+    }
+    
+    // Rules untuk collection utang (jika terpisah)
+    match /utang/{id} {
+      allow read: if isStaffOrAdmin();
+      allow create: if isStaffOrAdmin();
+      allow update: if isStaffOrAdmin();
+      allow delete: if isSignedIn() && userExists(request.auth.uid) && getUserData().role == 'admin';
+    }
+    
+    // Rules untuk collection piutang (jika terpisah)
+    match /piutang/{id} {
+      allow read: if isStaffOrAdmin();
+      allow create: if isStaffOrAdmin();
+      allow update: if isStaffOrAdmin();
       allow delete: if isSignedIn() && userExists(request.auth.uid) && getUserData().role == 'admin';
     }
   }
