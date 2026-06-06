@@ -88,54 +88,20 @@ class _LoginViewState extends State<LoginView>
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: const Color(0xFF127A84),
                           borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            width: 1.5,
-                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 16,
+                              color: Colors.black.withValues(alpha: 0.18),
+                              blurRadius: 24,
                               offset: const Offset(0, 8),
-                            )
+                            ),
                           ],
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CustomPaint(
-                              size: const Size(26, 26),
-                              painter: MountainLogoPainter(),
-                            ),
-                            const SizedBox(width: 4),
-                            const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'MATA ANGIN',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 7,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                                Text(
-                                  'OUTDOOR',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 7,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        clipBehavior: Clip.hardEdge,
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -176,7 +142,8 @@ class _LoginViewState extends State<LoginView>
                                 controller: _emailCtrl,
                                 label: 'Email',
                                 icon: Icons.email_outlined,
-                                keyboardType: TextInputType.emailAddress,
+                                keyboardType: TextInputType.text,
+                                autofillHints: const [AutofillHints.email],
                                 validator: (v) {
                                   if (v == null || v.isEmpty) {
                                     return 'Email tidak boleh kosong';
@@ -193,6 +160,7 @@ class _LoginViewState extends State<LoginView>
                                 label: 'Password',
                                 icon: Icons.lock_outline,
                                 obscure: _obscure,
+                                autofillHints: const [AutofillHints.password],
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscure
@@ -261,12 +229,14 @@ class _LoginViewState extends State<LoginView>
     bool obscure = false,
     Widget? suffixIcon,
     TextInputType? keyboardType,
+    Iterable<String>? autofillHints,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
       keyboardType: keyboardType,
+      autofillHints: autofillHints,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
@@ -290,43 +260,4 @@ class _LoginViewState extends State<LoginView>
       validator: validator,
     );
   }
-}
-
-class MountainLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFF5B914) // Warm yellow
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final w = size.width;
-    final h = size.height;
-
-    // Line 1: Left peak outer
-    final path1 = Path();
-    path1.moveTo(w * 0.1, h * 0.85);
-    path1.lineTo(w * 0.35, h * 0.45);
-    path1.lineTo(w * 0.42, h * 0.65);
-    canvas.drawPath(path1, paint);
-
-    // Line 2: Left peak inner/contour
-    final path2 = Path();
-    path2.moveTo(w * 0.2, h * 0.8);
-    path2.lineTo(w * 0.32, h * 0.55);
-    path2.lineTo(w * 0.36, h * 0.68);
-    canvas.drawPath(path2, paint);
-
-    // Line 3: Right peak (higher)
-    final path3 = Path();
-    path3.moveTo(w * 0.38, h * 0.62);
-    path3.lineTo(w * 0.58, h * 0.35);
-    path3.lineTo(w * 0.85, h * 0.58);
-    canvas.drawPath(path3, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

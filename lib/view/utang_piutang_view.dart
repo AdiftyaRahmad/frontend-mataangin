@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/utang_piutang_model.dart';
@@ -340,8 +341,12 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
 
   Future<void> _showFormDialog(BuildContext context, {UtangPiutangModel? item}) async {
     final namaCtrl = TextEditingController(text: item?.nama);
-    final totalTagihanCtrl = TextEditingController(text: item?.totalTagihan.toStringAsFixed(0) ?? '');
-    final dpCtrl = TextEditingController(text: item?.dp.toStringAsFixed(0) ?? '0');
+    final totalTagihanCtrl = TextEditingController(
+      text: item != null ? _formatRibuan(item.totalTagihan.toStringAsFixed(0)) : '',
+    );
+    final dpCtrl = TextEditingController(
+      text: item != null ? _formatRibuan(item.dp.toStringAsFixed(0)) : '',
+    );
     final keteranganCtrl = TextEditingController(text: item?.keterangan);
 
     String selectedTipe = (item?.tipe ?? 'utang').trim().toLowerCase();
@@ -359,8 +364,8 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
       builder: (sheetCtx) => StatefulBuilder(
         builder: (context, setModalState) {
           double getSisa() {
-            final t = double.tryParse(totalTagihanCtrl.text) ?? 0;
-            final d = double.tryParse(dpCtrl.text) ?? 0;
+            final t = double.tryParse(totalTagihanCtrl.text.replaceAll('.', '')) ?? 0;
+            final d = double.tryParse(dpCtrl.text.replaceAll('.', '')) ?? 0;
             return (t - d) > 0 ? (t - d) : 0;
           }
 
@@ -373,12 +378,12 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
           return Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
               decoration: const BoxDecoration(
-                color: Color(0xFF1E293B),
+                color: Color(0xFF1C1C1C),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
                 ),
               ),
               child: Form(
@@ -388,6 +393,7 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // ── Header ──────────────────────────────────────────
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -395,86 +401,134 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                             item == null ? 'Tambah Utang Piutang' : 'Edit Utang Piutang',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white54),
+                            icon: const Icon(Icons.close, color: Colors.white, size: 24),
                             onPressed: () => Navigator.pop(sheetCtx),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
-                      _formField(
-                        namaCtrl,
-                        'Nama',
-                        validator: (v) => v == null || v.isEmpty ? 'Nama wajib diisi' : null,
+
+                      // ── Nama ────────────────────────────────────────────
+                      _labeledField(
+                        label: 'Nama',
+                        child: TextFormField(
+                          controller: namaCtrl,
+                          style: _inputTextStyle,
+                          cursorColor: const Color(0xFF1E1E1E),
+                          decoration: _tealInputDecoration(),
+                          validator: (v) => v == null || v.isEmpty ? 'Nama wajib diisi' : null,
+                        ),
                       ),
                       const SizedBox(height: 12),
+
+                      // ── Total Tagihan & DP ───────────────────────────────
                       Row(
                         children: [
                           Expanded(
-                            child: _formField(
-                              totalTagihanCtrl,
-                              'Total Tagihan',
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => setModalState(() {}),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Total wajib diisi';
-                                if (double.tryParse(v) == null) return 'Angka tidak valid';
-                                return null;
-                              },
+                            child: _labeledField(
+                              label: 'Total Tagihan',
+                              child: TextFormField(
+                                controller: totalTagihanCtrl,
+                                style: _inputTextStyle,
+                                cursorColor: const Color(0xFF1E1E1E),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [_ThousandsSeparatorFormatter()],
+                                decoration: _tealInputDecoration(),
+                                onChanged: (_) => setModalState(() {}),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) return 'Total wajib diisi';
+                                  if (double.tryParse(v.replaceAll('.', '')) == null) return 'Angka tidak valid';
+                                  return null;
+                                },
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: _formField(
-                              dpCtrl,
-                              'DP (Down Payment)',
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => setModalState(() {}),
+                            child: _labeledField(
+                              label: 'DP (Down Payment)',
+                              child: TextFormField(
+                                controller: dpCtrl,
+                                style: _inputTextStyle,
+                                cursorColor: const Color(0xFF1E1E1E),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [_ThousandsSeparatorFormatter()],
+                                decoration: _tealInputDecoration(),
+                                onChanged: (_) => setModalState(() {}),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      // Dropdown Tipe
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedTipe,
-                        dropdownColor: const Color(0xFF1E293B),
-                        style: const TextStyle(color: Colors.white),
-                        decoration: _inputDecoration('Tipe'),
-                        items: const [
-                          DropdownMenuItem(value: 'utang', child: Text('Utang')),
-                          DropdownMenuItem(value: 'piutang', child: Text('Piutang')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setModalState(() {
-                              selectedTipe = val;
-                            });
-                          }
-                        },
+                      const SizedBox(height: 12),
+
+                      // ── Tipe Dropdown ────────────────────────────────────
+                      _labeledField(
+                        label: 'Tipe',
+                        child: DropdownButtonFormField<String>(
+                          initialValue: selectedTipe,
+                          dropdownColor: const Color(0xFF1C1C1C),
+                          style: _inputTextStyle,
+                          iconEnabledColor: const Color(0xFF1E1E1E),
+                          decoration: _tealInputDecoration(),
+                          selectedItemBuilder: (BuildContext context) {
+                            return const [
+                              Text('Utang', style: _inputTextStyle),
+                              Text('Piutang', style: _inputTextStyle),
+                            ];
+                          },
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'utang',
+                              child: Text('Utang', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+                            ),
+                            DropdownMenuItem(
+                              value: 'piutang',
+                              child: Text('Piutang', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => selectedTipe = val);
+                          },
+                        ),
                       ),
                       const SizedBox(height: 12),
-                      _formField(keteranganCtrl, 'Keterangan (opsional)'),
+
+                      // ── Keterangan ───────────────────────────────────────
+                      _labeledField(
+                        label: 'Keterangan (opsional)',
+                        child: TextFormField(
+                          controller: keteranganCtrl,
+                          style: _inputTextStyle,
+                          cursorColor: const Color(0xFF1E1E1E),
+                          maxLines: 2,
+                          decoration: _tealInputDecoration(),
+                        ),
+                      ),
                       const SizedBox(height: 16),
 
-                      // Sisa Pembayaran & Status Preview (Tampilan Saja)
+                      // ── Sisa & Status Summary ────────────────────────────
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.03),
+                          color: const Color(0xFF252A34),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(color: const Color(0xFF383F51), width: 1),
                         ),
                         child: Column(
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Sisa Pembayaran', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                                const Text(
+                                  'Sisa Pembayaran',
+                                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                                ),
                                 Text(
                                   fmtCur.format(getSisa()),
                                   style: const TextStyle(
@@ -489,22 +543,18 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Status Pembayaran', style: TextStyle(color: Colors.white54, fontSize: 13)),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
+                                const Text(
+                                  'Status Pembayaran',
+                                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                                ),
+                                Text(
+                                  getSisa() <= 0 ? 'LUNAS' : 'BELUM LUNAS',
+                                  style: TextStyle(
                                     color: getSisa() <= 0
-                                        ? const Color(0xFF22C55E).withValues(alpha: 0.15)
-                                        : const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    getSisa() <= 0 ? 'LUNAS' : 'BELUM LUNAS',
-                                    style: TextStyle(
-                                      color: getSisa() <= 0 ? const Color(0xFF22C55E) : const Color(0xFFF59E0B),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                        ? const Color(0xFF22C55E)
+                                        : const Color(0xFFF59E0B),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
@@ -512,12 +562,12 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
-                      // Submit Button
+                      // ── Simpan Button ─────────────────────────────────────
                       Consumer<UtangPiutangViewModel>(
                         builder: (_, vm, __) => SizedBox(
-                          height: 50,
+                          height: 52,
                           child: ElevatedButton(
                             onPressed: vm.isMutating
                                 ? null
@@ -528,10 +578,15 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                       id: item?.id,
                                       nama: namaCtrl.text.trim(),
                                       tipe: selectedTipe,
-                                      totalTagihan: double.parse(totalTagihanCtrl.text.trim()),
-                                      dp: double.tryParse(dpCtrl.text.trim()) ?? 0.0,
+                                      totalTagihan: double.parse(
+                                          totalTagihanCtrl.text.trim().replaceAll('.', '')),
+                                      dp: double.tryParse(
+                                              dpCtrl.text.trim().replaceAll('.', '')) ??
+                                          0.0,
                                       sisaPembayaran: sisa,
-                                      keterangan: keteranganCtrl.text.trim().isEmpty ? null : keteranganCtrl.text.trim(),
+                                      keterangan: keteranganCtrl.text.trim().isEmpty
+                                          ? null
+                                          : keteranganCtrl.text.trim(),
                                       status: sisa <= 0 ? 'lunas' : 'belum_lunas',
                                     );
 
@@ -544,7 +599,8 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                       if (!success) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: Text(vm.errorMessage ?? 'Gagal menyimpan'),
+                                            content:
+                                                Text(vm.errorMessage ?? 'Gagal menyimpan'),
                                             backgroundColor: const Color(0xFFEF4444),
                                           ),
                                         );
@@ -553,15 +609,25 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                   },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1598A3),
+                              elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                             ),
                             child: vm.isMutating
-                                ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2),
+                                  )
                                 : Text(
                                     item == null ? 'Simpan' : 'Perbarui',
-                                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                           ),
                         ),
@@ -583,7 +649,8 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
         title: const Text('Hapus Data', style: TextStyle(color: Colors.white)),
-        content: const Text('Apakah Anda yakin ingin menghapus data utang piutang ini?', style: TextStyle(color: Colors.white70)),
+        content: const Text('Apakah Anda yakin ingin menghapus data utang piutang ini?',
+            style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -610,38 +677,98 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
     }
   }
 
-  Widget _formField(
-    TextEditingController ctrl,
-    String label, {
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    void Function(String)? onChanged,
-  }) {
-    return TextFormField(
-      controller: ctrl,
-      keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
-      decoration: _inputDecoration(label),
-      validator: validator,
-      onChanged: onChanged,
+  /// Label above a child widget (matches pemasukan/pengeluaran style)
+  Widget _labeledField({required String label, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        child,
+      ],
     );
   }
 
-  InputDecoration _inputDecoration(String label) {
+  static const TextStyle _inputTextStyle = TextStyle(
+    color: Color(0xFF1E1E1E),
+    fontSize: 15,
+    fontWeight: FontWeight.bold,
+  );
+
+  InputDecoration _tealInputDecoration() {
     return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white60),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.08),
+      fillColor: const Color(0xFF1598A3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF1598A3), width: 1.5),
+        borderSide: BorderSide.none,
       ),
       errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
+    );
+  }
+}
+
+// ── Thousand separator formatter ─────────────────────────────────────────────
+
+String _formatRibuan(String s) {
+  final clean = s.replaceAll(RegExp(r'[^0-9]'), '');
+  if (clean.isEmpty) return '';
+  final reversed = clean.split('').reversed.join('');
+  final List<String> chunks = [];
+  for (int i = 0; i < reversed.length; i += 3) {
+    chunks.add(reversed.substring(i, i + 3 < reversed.length ? i + 3 : reversed.length));
+  }
+  return chunks.join('.').split('').reversed.join('');
+}
+
+class _ThousandsSeparatorFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) return newValue.copyWith(text: '');
+    final clean = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (clean.isEmpty) {
+      return const TextEditingValue(
+          text: '', selection: TextSelection.collapsed(offset: 0));
+    }
+    if (double.tryParse(clean) == null) return oldValue;
+
+    final reversed = clean.split('').reversed.join('');
+    final chunks = <String>[];
+    for (int i = 0; i < reversed.length; i += 3) {
+      chunks.add(reversed.substring(
+          i, i + 3 < reversed.length ? i + 3 : reversed.length));
+    }
+    final formatted = chunks.join('.').split('').reversed.join('');
+
+    int digitsBeforeCursor = 0;
+    final selEnd = newValue.selection.end.clamp(0, newValue.text.length);
+    for (int i = 0; i < selEnd; i++) {
+      if (RegExp(r'[0-9]').hasMatch(newValue.text[i])) digitsBeforeCursor++;
+    }
+
+    int newSel = 0, digits = 0;
+    while (digits < digitsBeforeCursor && newSel < formatted.length) {
+      if (RegExp(r'[0-9]').hasMatch(formatted[newSel])) digits++;
+      newSel++;
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: newSel),
     );
   }
 }

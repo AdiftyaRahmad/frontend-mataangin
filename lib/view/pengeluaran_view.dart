@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/pengeluaran_model.dart';
 import '../viewmodel/pengeluaran_viewmodel.dart';
+import '../viewmodel/dashboard_viewmodel.dart';
 import '../core/widgets/admin_only_widget.dart';
 
 class PengeluaranView extends StatelessWidget {
@@ -20,34 +22,41 @@ class PengeluaranView extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF1598A3),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1598A3),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        toolbarHeight: 70,
+        automaticallyImplyLeading: false,
         title: const Text(
           'Pengeluaran',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 20),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_outlined, color: Colors.white70),
+            icon: const Icon(Icons.sync, color: Colors.white, size: 28),
             onPressed: () => context.read<PengeluaranViewModel>().loadAll(),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'pengeluaran_fab',
-        backgroundColor: const Color(0xFFEF4444),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: const Color(0xFFB32626),
+        shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white, size: 28),
         onPressed: () => _showFormDialog(context),
       ),
       body: Column(
         children: [
           Container(
-            margin: const EdgeInsets.all(16),
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFFEF4444),
-              borderRadius: BorderRadius.circular(32),
+              color: const Color(0xFFB32626),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -58,21 +67,22 @@ class PengeluaranView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'TOTAL PENGELUARAN',
                       style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.0),
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       fmt.format(vm.totalPengeluaran),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -132,7 +142,7 @@ class PengeluaranView extends StatelessWidget {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.only(top: 8, bottom: 88, left: 16, right: 16),
       itemCount: vm.list.length,
       itemBuilder: (_, i) {
         final item = vm.list[i];
@@ -152,7 +162,7 @@ class PengeluaranView extends StatelessWidget {
   }) async {
     final namaBarangCtrl = TextEditingController(text: item?.namaBarang);
     final nominalCtrl = TextEditingController(
-      text: item?.nominal.toStringAsFixed(0) ?? '',
+      text: item != null ? _formatRibuan(item.nominal.toStringAsFixed(0)) : '',
     );
     final keteranganCtrl = TextEditingController(text: item?.keterangan);
     final tanggalCtrl = TextEditingController(
@@ -171,8 +181,8 @@ class PengeluaranView extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: const BoxDecoration(
-            color: Color(0xFF1E293B),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            color: Color(0xFF1C1C1C),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
           ),
           child: Form(
             key: formKey,
@@ -188,12 +198,12 @@ class PengeluaranView extends StatelessWidget {
                         item == null ? 'Tambah Pengeluaran' : 'Edit Pengeluaran',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white54),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 24),
                         onPressed: () => Navigator.pop(context),
                       )
                     ],
@@ -210,43 +220,64 @@ class PengeluaranView extends StatelessWidget {
                     nominalCtrl,
                     'Nominal',
                     keyboardType: TextInputType.number,
+                    inputFormatters: [ThousandsSeparatorInputFormatter()],
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'Nominal wajib diisi';
-                      if (double.tryParse(v) == null) return 'Angka tidak valid';
+                      final raw = v.replaceAll('.', '');
+                      if (double.tryParse(raw) == null) return 'Angka tidak valid';
                       return null;
                     },
                   ),
                   const SizedBox(height: 12),
                   // Tanggal Picker
-                  TextFormField(
-                    controller: tanggalCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Tanggal (YYYY-MM-DD)',
-                      labelStyle: const TextStyle(color: Colors.white54),
-                      filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.08),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Tanggal (YYYY-MM-DD)',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: tanggalCtrl,
+                        style: const TextStyle(
+                          color: Color(0xFF1E1E1E),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF1598A3),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
+                        ),
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.tryParse(tanggalCtrl.text) ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                          );
+                          if (date != null) {
+                            tanggalCtrl.text = DateFormat('yyyy-MM-dd').format(date);
+                          }
+                        },
                       ),
-                    ),
-                    readOnly: true,
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.tryParse(tanggalCtrl.text) ?? DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-                      if (date != null) {
-                        tanggalCtrl.text = DateFormat('yyyy-MM-dd').format(date);
-                      }
-                    },
+                    ],
                   ),
                   const SizedBox(height: 12),
                   _formField(keteranganCtrl, 'Keterangan (opsional)'),
@@ -261,7 +292,7 @@ class PengeluaranView extends StatelessWidget {
                               final data = PengeluaranModel(
                                 id: item?.id,
                                 namaBarang: namaBarangCtrl.text.trim(),
-                                nominal: double.parse(nominalCtrl.text),
+                                nominal: double.parse(nominalCtrl.text.replaceAll('.', '')),
                                 keterangan: keteranganCtrl.text.trim().isEmpty
                                     ? null
                                     : keteranganCtrl.text.trim(),
@@ -272,7 +303,9 @@ class PengeluaranView extends StatelessWidget {
                                   : await pengeluaranVm.update(item.id!, data);
                               if (ctx.mounted) {
                                 Navigator.pop(ctx);
-                                if (!success) {
+                                if (success) {
+                                  ctx.read<DashboardViewModel>().loadDashboard();
+                                } else {
                                   ScaffoldMessenger.of(ctx).showSnackBar(
                                     SnackBar(
                                       content: Text(vm.errorMessage ?? 'Gagal menyimpan'),
@@ -283,11 +316,12 @@ class PengeluaranView extends StatelessWidget {
                               }
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFEF4444),
+                        backgroundColor: const Color(0xFF1598A3),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
+                        elevation: 0,
                       ),
                       child: vm.isMutating
                           ? const SizedBox(
@@ -303,7 +337,7 @@ class PengeluaranView extends StatelessWidget {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                     ),
@@ -346,37 +380,61 @@ class PengeluaranView extends StatelessWidget {
       ),
     );
     if (confirmed == true && context.mounted) {
-      context.read<PengeluaranViewModel>().delete(id);
+      final success = await context.read<PengeluaranViewModel>().delete(id);
+      if (success && context.mounted) {
+        context.read<DashboardViewModel>().loadDashboard();
+      }
     }
   }
 }
 
-TextFormField _formField(
+Widget _formField(
   TextEditingController ctrl,
   String label, {
   TextInputType? keyboardType,
   String? Function(String?)? validator,
+  List<TextInputFormatter>? inputFormatters,
 }) {
-  return TextFormField(
-    controller: ctrl,
-    keyboardType: keyboardType,
-    style: const TextStyle(color: Colors.white, fontSize: 14),
-    validator: validator,
-    decoration: InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.08),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+      const SizedBox(height: 6),
+      TextFormField(
+        controller: ctrl,
+        keyboardType: keyboardType,
+        style: const TextStyle(
+          color: Color(0xFF1E1E1E),
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+        ),
+        cursorColor: const Color(0xFF1E1E1E),
+        validator: validator,
+        inputFormatters: inputFormatters,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: const Color(0xFF1598A3),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
+        ),
       ),
-      errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
-    ),
+    ],
   );
 }
 
@@ -399,22 +457,22 @@ class _PengeluaranCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1C),
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+              color: const Color(0xFF2D1F21),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.arrow_downward_rounded,
               color: Color(0xFFEF4444),
-              size: 20,
+              size: 22,
             ),
           ),
           const SizedBox(width: 12),
@@ -426,20 +484,27 @@ class _PengeluaranCard extends StatelessWidget {
                   item.namaBarang,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'TGL: ${item.tanggal} • OLEH: ${item.createdBy ?? '1'}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.w500, letterSpacing: 0.5),
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 if (item.keterangan != null && item.keterangan!.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     item.keterangan!,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ],
@@ -452,11 +517,12 @@ class _PengeluaranCard extends StatelessWidget {
               Text(
                 '- ${fmt.format(item.nominal)}',
                 style: const TextStyle(
-                  color: Color(0xFFEF4444),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+                  color: Color(0xFFEF5350),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   // Tombol EDIT - Admin & Operator bisa
@@ -470,6 +536,7 @@ class _PengeluaranCard extends StatelessWidget {
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.all(4),
                   ),
+                  const SizedBox(width: 4),
                   // Tombol DELETE - Hanya Admin
                   DeleteOnlyWidget(
                     child: IconButton(
@@ -491,4 +558,68 @@ class _PengeluaranCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    final String cleanText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (cleanText.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    final double? parsed = double.tryParse(cleanText);
+    if (parsed == null) {
+      return oldValue;
+    }
+
+    final String reversed = cleanText.split('').reversed.join('');
+    final List<String> chunks = [];
+    for (int i = 0; i < reversed.length; i += 3) {
+      chunks.add(reversed.substring(i, i + 3 < reversed.length ? i + 3 : reversed.length));
+    }
+    final String formatted = chunks.join('.').split('').reversed.join('');
+
+    int selectionIndex = newValue.selection.end;
+    int digitsBeforeCursor = 0;
+    for (int i = 0; i < selectionIndex && i < newValue.text.length; i++) {
+      if (RegExp(r'[0-9]').hasMatch(newValue.text[i])) {
+        digitsBeforeCursor++;
+      }
+    }
+
+    int newSelectionIndex = 0;
+    int digitCount = 0;
+    while (digitCount < digitsBeforeCursor && newSelectionIndex < formatted.length) {
+      if (RegExp(r'[0-9]').hasMatch(formatted[newSelectionIndex])) {
+        digitCount++;
+      }
+      newSelectionIndex++;
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: newSelectionIndex),
+    );
+  }
+}
+
+String _formatRibuan(String s) {
+  final clean = s.replaceAll(RegExp(r'[^0-9]'), '');
+  if (clean.isEmpty) return '';
+  final reversed = clean.split('').reversed.join('');
+  final List<String> chunks = [];
+  for (int i = 0; i < reversed.length; i += 3) {
+    chunks.add(reversed.substring(i, i + 3 < reversed.length ? i + 3 : reversed.length));
+  }
+  return chunks.join('.').split('').reversed.join('');
 }

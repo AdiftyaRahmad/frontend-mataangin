@@ -13,6 +13,17 @@ import 'pengeluaran_view.dart';
 import 'utang_piutang_view.dart';
 import 'laporan_view.dart';
 
+// ─── Color Palette ─────────────────────────────────────────────────────────────
+const _kBg         = Color(0xFF1598A3);
+const _kCard       = Color(0xFF1E1E1E);
+const _kTeal       = Color(0xFF1598A3);
+const _kTealDark   = Color(0xFF0D7A84);
+const _kTealDeep   = Color(0xFF0A5C64);
+const _kGreen      = Color(0xFF22C55E);
+const _kRed        = Color(0xFFEF4444);
+const _kTextPrim   = Colors.white;
+const _kTextSub    = Color(0xFF9CA3AF);
+
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
 
@@ -37,7 +48,7 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1598A3),
+      backgroundColor: _kBg,
       body: IndexedStack(
         index: _currentIndex,
         children: const [
@@ -48,66 +59,83 @@ class _DashboardViewState extends State<DashboardView> {
           LaporanView(),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _BottomNav(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+      ),
     );
   }
+}
 
-  Widget _buildBottomNav() {
+// ─── Bottom Navigation ─────────────────────────────────────────────────────────
+
+class _BottomNav extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _BottomNav({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      _NavItem(Icons.grid_view_rounded,        Icons.grid_view_rounded,        'Dashboard'),
+      _NavItem(Icons.trending_up_rounded,      Icons.trending_up_rounded,      'Pemasukan'),
+      _NavItem(Icons.trending_down_rounded,    Icons.trending_down_rounded,    'Pengeluaran'),
+      _NavItem(Icons.people_alt_outlined,      Icons.people_alt_rounded,       'Utang'),
+      _NavItem(Icons.bar_chart_rounded,        Icons.bar_chart_rounded,        'Laporan'),
+    ];
+
     return Container(
       decoration: const BoxDecoration(
         color: Color(0xFF1A1A1A),
-        border: Border(top: BorderSide(color: Colors.white10, width: 1)),
+        border: Border(top: BorderSide(color: Color(0xFF2A2A2A), width: 1)),
       ),
-      child: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          indicatorColor: const Color(0xFF1598A3).withValues(alpha: 0.15),
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const TextStyle(
-                  color: Color(0xFF1598A3),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600);
-            }
-            return TextStyle(
-                color: Colors.white.withValues(alpha: 0.45), fontSize: 11);
-          }),
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: Color(0xFF1598A3));
-            }
-            return IconThemeData(color: Colors.white.withValues(alpha: 0.45));
-          }),
-        ),
-        child: NavigationBar(
-          backgroundColor: Colors.transparent,
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (i) => setState(() => _currentIndex = i),
-          destinations: const [
-            NavigationDestination(
-                icon: Icon(Icons.grid_view_outlined),
-                selectedIcon: Icon(Icons.grid_view),
-                label: 'Dashboard'),
-            NavigationDestination(
-                icon: Icon(Icons.trending_up_outlined),
-                selectedIcon: Icon(Icons.trending_up),
-                label: 'Pemasukan'),
-            NavigationDestination(
-                icon: Icon(Icons.trending_down_outlined),
-                selectedIcon: Icon(Icons.trending_down),
-                label: 'Pengeluaran'),
-            NavigationDestination(
-                icon: Icon(Icons.handshake_outlined),
-                selectedIcon: Icon(Icons.handshake),
-                label: 'Utang'),
-            NavigationDestination(
-                icon: Icon(Icons.bar_chart_outlined),
-                selectedIcon: Icon(Icons.bar_chart),
-                label: 'Laporan'),
-          ],
-        ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).padding.bottom,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(items.length, (i) {
+          final selected = i == currentIndex;
+          final item = items[i];
+          return GestureDetector(
+            onTap: () => onTap(i),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    selected ? item.activeIcon : item.icon,
+                    color: selected ? _kTeal : _kTextSub,
+                    size: 24,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.label,
+                    style: TextStyle(
+                      fontFamily: 'sans-serif',
+                      color: selected ? _kTeal : _kTextSub,
+                      fontSize: 11,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
+}
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItem(this.icon, this.activeIcon, this.label);
 }
 
 // ─── Home Tab ──────────────────────────────────────────────────────────────────
@@ -116,26 +144,53 @@ class _HomeTab extends StatelessWidget {
   const _HomeTab();
 
   @override
-  Widget build(BuildContext context) {
-    final authVm = context.watch<AuthViewModel>();
-    final dashVm = context.watch<DashboardViewModel>();
-    final pemasukanVm = context.watch<PemasukanViewModel>();
-    final pengeluaranVm = context.watch<PengeluaranViewModel>();
-    final fmt =
-        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+Widget build(BuildContext context) {
+  final authVm = context.watch<AuthViewModel>();
+  final dashVm = context.watch<DashboardViewModel>();
+  final pemasukanVm = context.watch<PemasukanViewModel>();
+  final pengeluaranVm = context.watch<PengeluaranViewModel>();
+
+  final fmt = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
+
+  final List<_TxData> allTx = [
+    ...pemasukanVm.list.map((e) => _TxData(
+          judul: 'Pemasukan - ${e.hari}',
+          jumlah: e.totalPemasukan,
+          tanggal: e.tanggal,
+          isIncome: true,
+        )),
+    ...pengeluaranVm.list.map((e) => _TxData(
+          judul: e.namaBarang,
+          jumlah: e.nominal,
+          tanggal: e.tanggal,
+          isIncome: false,
+        )),
+  ];
+
+  allTx.sort((a, b) => (b.tanggal ?? '').compareTo(a.tanggal ?? ''));
+
+  final recentTx = allTx.take(5).toList();
 
     return Column(
       children: [
-        // ── Teal Header ────────────────────────────────────────────────────
+        // ── Teal Header ─────────────────────────────────────────────────────
         Container(
-          color: Colors.transparent,
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: _kTeal,
+          ),
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 14,
+            top: MediaQuery.of(context).padding.top + 16,
             left: 20,
             right: 8,
             bottom: 20,
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
@@ -144,30 +199,36 @@ class _HomeTab extends StatelessWidget {
                     Text(
                       'Halo, ${authVm.user?.name ?? 'Pengguna'} 👋',
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500),
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.1,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     const Text(
                       'Selamat Datang!',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800),
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.exit_to_app, color: Colors.white),
+                icon: const Icon(Icons.logout_rounded,
+                    color: Colors.white, size: 22),
                 onPressed: () async {
                   await context.read<AuthViewModel>().logout();
                   if (context.mounted) {
                     Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginView()),
-                        (r) => false);
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginView()),
+                      (r) => false,
+                    );
                   }
                 },
               ),
@@ -175,18 +236,21 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
 
-        // ── Body ───────────────────────────────────────────────────────────
+        // ── Scrollable Body ──────────────────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Saldo Card ─────────────────────────────────────────────
+                // ── Saldo Card ───────────────────────────────────────────────
                 if (dashVm.isLoading)
                   const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFF1598A3)))
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: CircularProgressIndicator(color: _kTeal),
+                    ),
+                  )
                 else if (dashVm.state == ViewState.error)
                   _ErrorCard(message: dashVm.errorMessage ?? 'Gagal memuat')
                 else
@@ -197,54 +261,54 @@ class _HomeTab extends StatelessWidget {
                     fmt: fmt,
                   ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
-                // ── Transaksi Terakhir ────────────────────────────────────
+                // ── Transaksi Terakhir Header ─────────────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       'Transaksi Terakhir',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700),
+                        color: _kTextPrim,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.1,
+                      ),
                     ),
                     TextButton(
                       onPressed: () {},
                       style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(0, 0)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 2),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       child: const Text(
                         'Lihat Semua',
-                        style:
-                            TextStyle(color: Colors.white, fontSize: 13),
+                        style: TextStyle(
+                          color: _kTeal,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
 
-                // ── Recent Transactions ───────────────────────────────────
-                ...pemasukanVm.list.take(3).map((e) => _TransactionTile(
-                      judul: 'Pemasukan - ${e.hari}',
-                      jumlah: e.totalPemasukan,
-                      tanggal: e.tanggal,
-                      isIncome: true,
-                      fmt: fmt,
-                    )),
-                ...pengeluaranVm.list.take(3).map((e) => _TransactionTile(
-                      judul: e.namaBarang,
-                      jumlah: e.nominal,
-                      tanggal: e.tanggal,
-                      isIncome: false,
-                      fmt: fmt,
-                    )),
+                const SizedBox(height: 12),
 
-                if (pemasukanVm.list.isEmpty && pengeluaranVm.list.isEmpty)
-                  const _EmptyState(message: 'Belum ada transaksi'),
-
-                const SizedBox(height: 24),
+                // ── Transaction List ──────────────────────────────────────
+                if (recentTx.isEmpty)
+                  const _EmptyState(message: 'Belum ada transaksi')
+                else
+                  ...recentTx.map((tx) => _TransactionTile(
+                        judul: tx.judul,
+                        jumlah: tx.jumlah,
+                        tanggal: tx.tanggal,
+                        isIncome: tx.isIncome,
+                        fmt: fmt,
+                      )),
               ],
             ),
           ),
@@ -272,25 +336,34 @@ class _SaldoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A4D54),
+        color: _kTealDark,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Total Saldo',
-              style: TextStyle(color: Colors.white54, fontSize: 13)),
-          const SizedBox(height: 6),
+          const Text(
+            'Total Saldo',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
           Text(
             fmt.format(saldo),
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.w800),
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
@@ -298,7 +371,7 @@ class _SaldoCard extends StatelessWidget {
                   label: 'PEMASUKAN',
                   value: fmt.format(pemasukan),
                   icon: Icons.arrow_upward_rounded,
-                  accentColor: const Color(0xFF22C55E),
+                  accentColor: _kGreen,
                 ),
               ),
               const SizedBox(width: 12),
@@ -307,7 +380,7 @@ class _SaldoCard extends StatelessWidget {
                   label: 'PENGELUARAN',
                   value: fmt.format(pengeluaran),
                   icon: Icons.arrow_downward_rounded,
-                  accentColor: const Color(0xFFEF4444),
+                  accentColor: _kRed,
                 ),
               ),
             ],
@@ -317,6 +390,8 @@ class _SaldoCard extends StatelessWidget {
     );
   }
 }
+
+// ─── Mini Stat ─────────────────────────────────────────────────────────────────
 
 class _MiniStat extends StatelessWidget {
   final String label;
@@ -334,10 +409,10 @@ class _MiniStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF166B72),
-        borderRadius: BorderRadius.circular(12),
+        color: _kTealDeep,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,34 +420,36 @@ class _MiniStat extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: accentColor, size: 14),
+                child: Icon(icon, color: accentColor, size: 13),
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   label,
                   style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4),
+                    color: Colors.white54,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             value,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w700),
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -382,6 +459,19 @@ class _MiniStat extends StatelessWidget {
 }
 
 // ─── Transaction Tile ──────────────────────────────────────────────────────────
+
+class _TxData {
+  final String judul;
+  final double jumlah;
+  final String? tanggal;
+  final bool isIncome;
+  const _TxData({
+    required this.judul,
+    required this.jumlah,
+    this.tanggal,
+    required this.isIncome,
+  });
+}
 
 class _TransactionTile extends StatelessWidget {
   final String judul;
@@ -400,17 +490,18 @@ class _TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isIncome ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final color = isIncome ? _kGreen : _kRed;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1C),
+        color: _kCard,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
+          // ── Icon ──────────────────────────────────────────────────────────
           Container(
             width: 40,
             height: 40,
@@ -420,40 +511,59 @@ class _TransactionTile extends StatelessWidget {
             ),
             child: Icon(
               isIncome
-                  ? Icons.add_circle_outline
-                  : Icons.remove_circle_outline,
+                  ? Icons.add_circle_outline_rounded
+                  : Icons.remove_circle_outline_rounded,
               color: color,
-              size: 20,
+              size: 22,
             ),
           ),
           const SizedBox(width: 12),
+
+          // ── Title & Date ──────────────────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(judul,
+                Text(
+                  judul,
+                  style: const TextStyle(
+                    color: _kTextPrim,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (tanggal != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    tanggal!,
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
-                if (tanggal != null)
-                  Text(tanggal!,
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.38),
-                          fontSize: 11)),
+                      color: _kTextSub,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
+
+          // ── Amount ───────────────────────────────────────────────────────
           Text(
             '${isIncome ? '+' : '-'} ${fmt.format(jumlah)}',
             style: TextStyle(
-                color: color, fontSize: 14, fontWeight: FontWeight.w700),
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+// ─── Error Card ────────────────────────────────────────────────────────────────
 
 class _ErrorCard extends StatelessWidget {
   final String message;
@@ -464,23 +574,27 @@ class _ErrorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+        color: _kRed.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+        border: Border.all(color: _kRed.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Color(0xFFEF4444)),
+          const Icon(Icons.error_outline, color: _kRed),
           const SizedBox(width: 10),
           Expanded(
-              child: Text(message,
-                  style: const TextStyle(color: Color(0xFFFCA5A5)))),
+            child: Text(
+              message,
+              style: const TextStyle(color: Color(0xFFFCA5A5)),
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
+// ─── Empty State ───────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   final String message;
@@ -490,15 +604,19 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
+        padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
           children: [
-            Icon(Icons.inbox_outlined,
-                size: 48, color: Colors.white.withValues(alpha: 0.3)),
+            Icon(Icons.receipt_long_outlined,
+                size: 52, color: Colors.white.withValues(alpha: 0.2)),
             const SizedBox(height: 12),
-            Text(message,
-                style:
-                    TextStyle(color: Colors.white.withValues(alpha: 0.4))),
+            Text(
+              message,
+              style: const TextStyle(
+                color: _kTextSub,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),
