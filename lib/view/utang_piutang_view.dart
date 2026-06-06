@@ -559,6 +559,36 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                 ),
                               ],
                             ),
+                            // Show settlement info when becoming lunas on edit
+                            if (item != null && item.status == 'belum_lunas' && getSisa() <= 0) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF22C55E).withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.info_outline, color: Color(0xFF22C55E), size: 16),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        selectedTipe == 'piutang'
+                                            ? 'Pelunasan akan otomatis tercatat sebagai Pemasukan hari ini'
+                                            : 'Pelunasan akan otomatis tercatat sebagai Pengeluaran hari ini',
+                                        style: const TextStyle(
+                                          color: Color(0xFF22C55E),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -574,6 +604,7 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                 : () async {
                                     if (!formKey.currentState!.validate()) return;
                                     final sisa = getSisa();
+                                    final newStatus = sisa <= 0 ? 'lunas' : 'belum_lunas';
                                     final model = UtangPiutangModel(
                                       id: item?.id,
                                       nama: namaCtrl.text.trim(),
@@ -587,23 +618,80 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                       keterangan: keteranganCtrl.text.trim().isEmpty
                                           ? null
                                           : keteranganCtrl.text.trim(),
-                                      status: sisa <= 0 ? 'lunas' : 'belum_lunas',
+                                      status: newStatus,
                                     );
 
-                                    final success = item == null
-                                        ? await vm.create(model)
-                                        : await vm.update(item.id!, model);
+                                    if (item == null) {
+                                      // CREATE - no settlement logic needed
+                                      final success = await vm.create(model);
+                                      if (context.mounted) {
+                                        Navigator.pop(sheetCtx);
+                                        if (!success) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(vm.errorMessage ?? 'Gagal menyimpan'),
+                                              backgroundColor: const Color(0xFFEF4444),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    } else {
+                                      // UPDATE - check if becoming lunas
+                                      final isBecomingLunas = item.status == 'belum_lunas' && newStatus == 'lunas';
 
-                                    if (context.mounted) {
-                                      Navigator.pop(sheetCtx);
-                                      if (!success) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content:
-                                                Text(vm.errorMessage ?? 'Gagal menyimpan'),
-                                            backgroundColor: const Color(0xFFEF4444),
-                                          ),
+                                      if (isBecomingLunas) {
+                                        // Show confirmation dialog for settlement
+                                        final confirmed = await _showSettlementConfirmation(
+                                          context,
+                                          selectedTipe,
+                                          item.sisaPembayaran,
+                                          item.nama,
+                                          fmtCur,
                                         );
+                                        if (confirmed != true) return;
+                                      }
+
+                                      // Use updateWithSettlement to handle settlement logic
+                                      final result = await vm.updateWithSettlement(item.id!, model);
+
+                                      if (context.mounted) {
+                                        Navigator.pop(sheetCtx);
+                                        final success = result['success'] as bool;
+                                        if (success) {
+                                          final settlementCreated = result['settlementCreated'] as bool;
+                                          if (settlementCreated) {
+                                            final settlementType = result['settlementType'] as String?;
+                                            final settlementAmount = result['settlementAmount'] as double;
+                                            final typeLabel = settlementType == 'pemasukan' ? 'Pemasukan' : 'Pengeluaran';
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Row(
+                                                  children: [
+                                                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Lunas! ${fmtCur.format(settlementAmount)} otomatis tercatat di $typeLabel hari ini',
+                                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                backgroundColor: const Color(0xFF22C55E),
+                                                duration: const Duration(seconds: 4),
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                            );
+                                          }
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(vm.errorMessage ?? 'Gagal menyimpan'),
+                                              backgroundColor: const Color(0xFFEF4444),
+                                            ),
+                                          );
+                                        }
                                       }
                                     }
                                   },
@@ -639,6 +727,125 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Show confirmation dialog before recording settlement
+  Future<bool?> _showSettlementConfirmation(
+    BuildContext context,
+    String tipe,
+    double amount,
+    String nama,
+    NumberFormat fmtCur,
+  ) {
+    final isPiutang = tipe == 'piutang' || tipe == 'customer';
+    final targetLabel = isPiutang ? 'Pemasukan' : 'Pengeluaran';
+    final icon = isPiutang ? Icons.trending_up : Icons.trending_down;
+    final color = isPiutang ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Konfirmasi Pelunasan',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isPiutang
+                  ? 'Piutang dari "$nama" akan dilunasi.'
+                  : 'Utang kepada "$nama" akan dilunasi.',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: 0.25)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Jumlah Pelunasan', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text(
+                        fmtCur.format(amount),
+                        style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Tercatat Sebagai', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          targetLabel.toUpperCase(),
+                          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Tanggal', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text(
+                        DateFormat('dd MMM yyyy', 'id_ID').format(DateTime.now()),
+                        style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Lunaskan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+        ],
       ),
     );
   }

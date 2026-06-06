@@ -93,6 +93,46 @@ class UtangPiutangViewModel extends ChangeNotifier {
     }
   }
 
+  /// Update with settlement detection.
+  /// Returns a Map with:
+  ///   - 'success': bool
+  ///   - 'settlementCreated': bool
+  ///   - 'settlementType': String? ('pemasukan' or 'pengeluaran')
+  ///   - 'settlementAmount': double
+  Future<Map<String, dynamic>> updateWithSettlement(String id, UtangPiutangModel item) async {
+    _mutating = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final result = await _repository.updateWithSettlement(id, item);
+      final updated = result['updatedItem'] as UtangPiutangModel;
+      final idx = _list.indexWhere((e) => e.id == id);
+      if (idx != -1) {
+        final mutable = List<UtangPiutangModel>.from(_list);
+        mutable[idx] = updated;
+        _list = mutable;
+      }
+      _mutating = false;
+      notifyListeners();
+      return {
+        'success': true,
+        'settlementCreated': result['settlementCreated'] ?? false,
+        'settlementType': result['settlementType'],
+        'settlementAmount': result['settlementAmount'] ?? 0.0,
+      };
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('AppException: ', '');
+      _mutating = false;
+      notifyListeners();
+      return {
+        'success': false,
+        'settlementCreated': false,
+        'settlementType': null,
+        'settlementAmount': 0.0,
+      };
+    }
+  }
+
   Future<bool> delete(String id) async {
     _mutating = true;
     _errorMessage = null;
@@ -111,3 +151,4 @@ class UtangPiutangViewModel extends ChangeNotifier {
     }
   }
 }
+

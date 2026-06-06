@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../model/utang_piutang_model.dart';
 
 class UtangPiutangService {
@@ -65,9 +66,138 @@ class UtangPiutangService {
     return _mapFromFirestore(updatedDoc);
   }
 
+  /// UPDATE utang/piutang AND auto-record settlement to pemasukan/pengeluaran.
+  ///
+  /// When status changes from 'belum_lunas' → 'lunas':
+  ///   - Piutang lunas → creates a Pemasukan record (customer paid us)
+  ///   - Utang lunas   → creates a Pengeluaran record (we paid supplier)
+  ///
+  /// Returns a record indicating whether a settlement record was created:
+  ///   { 'updatedItem': UtangPiutangModel, 'settlementCreated': bool, 'settlementType': String? }
+  Future<Map<String, dynamic>> updateWithSettlement(String id, UtangPiutangModel utangPiutang) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw Exception('Pengguna tidak terautentikasi.');
+    }
+
+    // Fetch existing document to compare status
+    final existingDoc = await _ref.doc(id).get();
+    if (!existingDoc.exists) {
+      throw Exception('Data Utang/Piutang tidak ditemukan.');
+    }
+
+    final existingData = existingDoc.data()!;
+    final oldStatus = existingData['status'] ?? 'belum_lunas';
+    final newStatus = utangPiutang.status;
+    final oldSisaPembayaran = (existingData['sisa_pembayaran'] as num?)?.toDouble() ?? 0.0;
+
+    // Determine if we need to create a settlement record
+    final isBecomingLunas = oldStatus == 'belum_lunas' && newStatus == 'lunas';
+
+    // The settlement amount is the old sisa_pembayaran (amount that was just settled)
+    final settlementAmount = isBecomingLunas ? oldSisaPembayaran : 0.0;
+
+    // Avoid updating created_by to satisfy rules
+    final originalCreatedBy = existingData['created_by'] ?? uid;
+
+    final updateData = _mapToFirestore(utangPiutang, originalCreatedBy);
+    updateData.remove('created_at');
+    updateData['updated_at'] = FieldValue.serverTimestamp();
+
+    if (isBecomingLunas && settlementAmount > 0) {
+      // Use Firestore batch for atomicity
+      final batch = _firestore.batch();
+
+      // 1. Update the utang_piutang document
+      batch.update(_ref.doc(id), updateData);
+
+      // 2. Create settlement record
+      final now = DateTime.now();
+      final todayStr = DateFormat('yyyy-MM-dd').format(now);
+      final hariIndo = _getHariIndonesia(now.weekday);
+      final tipe = utangPiutang.tipe.toLowerCase();
+
+      if (tipe == 'piutang' || tipe == 'customer') {
+        // Piutang lunas → customer pays us → Pemasukan
+        final pemasukanRef = _firestore.collection('pemasukan').doc();
+        batch.set(pemasukanRef, {
+          'tanggal': Timestamp.fromDate(DateTime.parse(todayStr)),
+          'hari': hariIndo,
+          'cash': settlementAmount.toInt(),
+          'transfer_bca': 0,
+          'qris_dana': 0,
+          'denda': 0,
+          'kerusakan': 0,
+          'dp': 0,
+          'total_pemasukan': settlementAmount.toInt(),
+          'created_by': uid,
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp(),
+          'keterangan_pelunasan': 'Pelunasan piutang: ${utangPiutang.nama}',
+        });
+      } else {
+        // Utang lunas → we pay supplier → Pengeluaran
+        final pengeluaranRef = _firestore.collection('pengeluaran').doc();
+        batch.set(pengeluaranRef, {
+          'nama_barang': 'Pelunasan utang: ${utangPiutang.nama}',
+          'nominal': settlementAmount.toInt(),
+          'keterangan': 'Pelunasan otomatis utang kepada ${utangPiutang.nama}',
+          'tanggal': Timestamp.fromDate(DateTime.parse(todayStr)),
+          'created_by': uid,
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Commit batch
+      await batch.commit();
+
+      // Fetch updated document
+      final updatedDoc = await _ref.doc(id).get();
+      return {
+        'updatedItem': _mapFromFirestore(updatedDoc),
+        'settlementCreated': true,
+        'settlementType': (tipe == 'piutang' || tipe == 'customer') ? 'pemasukan' : 'pengeluaran',
+        'settlementAmount': settlementAmount,
+      };
+    } else {
+      // No settlement needed — just update normally
+      await _ref.doc(id).update(updateData);
+      final updatedDoc = await _ref.doc(id).get();
+      return {
+        'updatedItem': _mapFromFirestore(updatedDoc),
+        'settlementCreated': false,
+        'settlementType': null,
+        'settlementAmount': 0.0,
+      };
+    }
+  }
+
   /// DELETE a utang_piutang record by ID
   Future<void> delete(String id) async {
     await _ref.doc(id).delete();
+  }
+
+  /// Helper: get Indonesian day name from weekday int
+  String _getHariIndonesia(int weekday) {
+    switch (weekday) {
+      case DateTime.monday:
+        return 'Senin';
+      case DateTime.tuesday:
+        return 'Selasa';
+      case DateTime.wednesday:
+        return 'Rabu';
+      case DateTime.thursday:
+        return 'Kamis';
+      case DateTime.friday:
+        return 'Jumat';
+      case DateTime.saturday:
+        return 'Sabtu';
+      case DateTime.sunday:
+        return 'Minggu';
+      default:
+        return 'Senin';
+    }
   }
 
   /// Helper to convert UtangPiutangModel to Firestore map
