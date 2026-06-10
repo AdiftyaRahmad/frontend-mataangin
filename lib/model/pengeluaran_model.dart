@@ -3,6 +3,7 @@ class PengeluaranModel {
   final String namaBarang;
   final double nominal;
   final String? keterangan;
+  final String kategori;
   final String tanggal;
   final dynamic createdBy;
   final String? createdAt;
@@ -13,6 +14,7 @@ class PengeluaranModel {
     required this.namaBarang,
     required this.nominal,
     this.keterangan,
+    required this.kategori,
     required this.tanggal,
     this.createdBy,
     this.createdAt,
@@ -25,6 +27,7 @@ class PengeluaranModel {
       namaBarang: json['nama_barang'] ?? json['namaBarang'] ?? json['judul'] ?? json['nama'] ?? '',
       nominal: double.tryParse(json['nominal']?.toString() ?? json['jumlah']?.toString() ?? '0') ?? 0.0,
       keterangan: json['keterangan'],
+      kategori: json['kategori'] ?? 'Pengeluaran lainya',
       tanggal: json['tanggal'] ?? json['created_at'] ?? '',
       createdBy: json['created_by'] ?? json['createdBy'],
       createdAt: json['created_at'] ?? json['createdAt'],
@@ -36,6 +39,7 @@ class PengeluaranModel {
         'nama_barang': namaBarang,
         'nominal': nominal,
         'keterangan': keterangan,
+        'kategori': kategori,
         'tanggal': tanggal,
       };
 
@@ -44,6 +48,7 @@ class PengeluaranModel {
     String? namaBarang,
     double? nominal,
     String? keterangan,
+    String? kategori,
     String? tanggal,
     dynamic createdBy,
     String? createdAt,
@@ -54,6 +59,7 @@ class PengeluaranModel {
       namaBarang: namaBarang ?? this.namaBarang,
       nominal: nominal ?? this.nominal,
       keterangan: keterangan ?? this.keterangan,
+      kategori: kategori ?? this.kategori,
       tanggal: tanggal ?? this.tanggal,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,

@@ -142,6 +142,7 @@ class UtangPiutangService {
           'nama_barang': 'Pelunasan utang: ${utangPiutang.nama}',
           'nominal': settlementAmount.toInt(),
           'keterangan': 'Pelunasan otomatis utang kepada ${utangPiutang.nama}',
+          'kategori': 'Pengeluaran lainya',
           'tanggal': Timestamp.fromDate(DateTime.parse(todayStr)),
           'created_by': uid,
           'created_at': FieldValue.serverTimestamp(),

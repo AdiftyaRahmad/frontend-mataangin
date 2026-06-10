@@ -73,6 +73,7 @@ service cloud.firestore {
       allow create: if isStaffOrAdmin() 
                     && request.resource.data.created_by == request.auth.uid
                     && request.resource.data.nama_barang is string
+                    && request.resource.data.kategori is string
                     && request.resource.data.nominal is int
                     && request.resource.data.tanggal is timestamp;
                     

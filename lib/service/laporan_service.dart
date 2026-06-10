@@ -47,12 +47,15 @@ class LaporanService {
       final data = doc.data();
       final amount = (data['nominal'] as num?)?.toDouble() ?? 0.0;
       totalPengeluaran += amount;
+      final kat = data['kategori'] ?? 'Pengeluaran lainya';
+      final ket = data['keterangan'] ?? '';
+      final desc = ket.toString().isNotEmpty ? '[$kat] $ket' : '[$kat]';
       transaksi.add(LaporanItem(
         judul: data['nama_barang'] ?? '',
         jumlah: amount,
         jenis: 'pengeluaran',
         tanggal: tanggalStr,
-        keterangan: data['keterangan'] ?? '',
+        keterangan: desc,
       ));
     }
 
@@ -114,12 +117,15 @@ class LaporanService {
           ? dateTimestamp.toDate().toIso8601String().split('T')[0]
           : '';
 
+      final kat = data['kategori'] ?? 'Pengeluaran lainya';
+      final ket = data['keterangan'] ?? '';
+      final desc = ket.toString().isNotEmpty ? '[$kat] $ket' : '[$kat]';
       transaksi.add(LaporanItem(
         judul: data['nama_barang'] ?? '',
         jumlah: amount,
         jenis: 'pengeluaran',
         tanggal: dateStr,
-        keterangan: data['keterangan'] ?? '',
+        keterangan: desc,
       ));
     }
 
