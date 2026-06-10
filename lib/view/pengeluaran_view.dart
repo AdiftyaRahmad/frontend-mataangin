@@ -170,13 +170,28 @@ class PengeluaranView extends StatelessWidget {
     );
     final formKey = GlobalKey<FormState>();
 
+    final categories = [
+      'Operasional',
+      'Gaji Karyawan',
+      'Inventaris / Alat',
+      'Sewa Tempat',
+      'Utilitas (Listrik/Air/Internet)',
+      'Bahan Baku / Stok',
+      'Lainnya',
+    ];
+
+    String selectedKategori = item?.kategori ?? 'Operasional';
+    if (!categories.contains(selectedKategori)) {
+      selectedKategori = 'Operasional';
+    }
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Padding(
+      builder: (sheetCtx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+          bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
         ),
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -186,163 +201,240 @@ class PengeluaranView extends StatelessWidget {
           ),
           child: Form(
             key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        item == null ? 'Tambah Pengeluaran' : 'Edit Pengeluaran',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 24),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _formField(
-                    namaBarangCtrl,
-                    'Nama Barang',
-                    validator: (v) =>
-                        v == null || v.isEmpty ? 'Nama barang wajib diisi' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  _formField(
-                    nominalCtrl,
-                    'Nominal',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [ThousandsSeparatorInputFormatter()],
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Nominal wajib diisi';
-                      final raw = v.replaceAll('.', '');
-                      if (double.tryParse(raw) == null) return 'Angka tidak valid';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Tanggal Picker
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Tanggal (YYYY-MM-DD)',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: tanggalCtrl,
-                        style: const TextStyle(
-                          color: Color(0xFF1E1E1E),
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFF1598A3),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+            child: StatefulBuilder(
+              builder: (context, setModalState) => SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          item == null ? 'Tambah Pengeluaran' : 'Edit Pengeluaran',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
                         ),
-                        onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.tryParse(tanggalCtrl.text) ?? DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
-                          if (date != null) {
-                            tanggalCtrl.text = DateFormat('yyyy-MM-dd').format(date);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _formField(keteranganCtrl, 'Keterangan (opsional)'),
-                  const SizedBox(height: 20),
-                  Consumer<PengeluaranViewModel>(
-                    builder: (ctx, vm, _) => ElevatedButton(
-                      onPressed: vm.isMutating
-                          ? null
-                          : () async {
-                              if (!formKey.currentState!.validate()) return;
-                              final pengeluaranVm = ctx.read<PengeluaranViewModel>();
-                              final data = PengeluaranModel(
-                                id: item?.id,
-                                namaBarang: namaBarangCtrl.text.trim(),
-                                nominal: double.parse(nominalCtrl.text.replaceAll('.', '')),
-                                keterangan: keteranganCtrl.text.trim().isEmpty
-                                    ? null
-                                    : keteranganCtrl.text.trim(),
-                                tanggal: tanggalCtrl.text,
-                              );
-                              final success = item == null
-                                  ? await pengeluaranVm.create(data)
-                                  : await pengeluaranVm.update(item.id!, data);
-                              if (ctx.mounted) {
-                                Navigator.pop(ctx);
-                                if (success) {
-                                  ctx.read<DashboardViewModel>().loadDashboard();
-                                } else {
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: Text(vm.errorMessage ?? 'Gagal menyimpan'),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1598A3),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: vm.isMutating
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              item == null ? 'Simpan' : 'Perbarui',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                          onPressed: () => Navigator.pop(sheetCtx),
+                        )
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    _formField(
+                      namaBarangCtrl,
+                      'Nama Barang',
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Nama barang wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // ── Kategori Dropdown ──────────────────────────────────
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Kategori',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<String>(
+                          initialValue: selectedKategori,
+                          dropdownColor: const Color(0xFF1C1C1C),
+                          style: const TextStyle(
+                            color: Color(0xFF1E1E1E),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          iconEnabledColor: const Color(0xFF1E1E1E),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFF1598A3),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
+                          ),
+                          selectedItemBuilder: (BuildContext context) {
+                            return categories.map((cat) {
+                              return Text(
+                                cat,
+                                style: const TextStyle(
+                                  color: Color(0xFF1E1E1E),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            }).toList();
+                          },
+                          items: categories.map((cat) {
+                            return DropdownMenuItem(
+                              value: cat,
+                              child: Text(
+                                cat,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setModalState(() => selectedKategori = val);
+                            }
+                          },
+                          validator: (v) => v == null || v.isEmpty ? 'Kategori wajib dipilih' : null,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _formField(
+                      nominalCtrl,
+                      'Nominal',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [ThousandsSeparatorInputFormatter()],
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Nominal wajib diisi';
+                        final raw = v.replaceAll('.', '');
+                        if (double.tryParse(raw) == null) return 'Angka tidak valid';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    // Tanggal Picker
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Tanggal (YYYY-MM-DD)',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: tanggalCtrl,
+                          style: const TextStyle(
+                            color: Color(0xFF1E1E1E),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFF1598A3),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
+                          ),
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: sheetCtx,
+                              initialDate: DateTime.tryParse(tanggalCtrl.text) ?? DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2100),
+                            );
+                            if (date != null) {
+                              tanggalCtrl.text = DateFormat('yyyy-MM-dd').format(date);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _formField(keteranganCtrl, 'Keterangan (opsional)'),
+                    const SizedBox(height: 20),
+                    Consumer<PengeluaranViewModel>(
+                      builder: (ctx, vm, _) => ElevatedButton(
+                        onPressed: vm.isMutating
+                            ? null
+                            : () async {
+                                if (!formKey.currentState!.validate()) return;
+                                final pengeluaranVm = ctx.read<PengeluaranViewModel>();
+                                final data = PengeluaranModel(
+                                  id: item?.id,
+                                  namaBarang: namaBarangCtrl.text.trim(),
+                                  nominal: double.parse(nominalCtrl.text.replaceAll('.', '')),
+                                  kategori: selectedKategori,
+                                  keterangan: keteranganCtrl.text.trim().isEmpty
+                                      ? null
+                                      : keteranganCtrl.text.trim(),
+                                  tanggal: tanggalCtrl.text,
+                                );
+                                final success = item == null
+                                    ? await pengeluaranVm.create(data)
+                                    : await pengeluaranVm.update(item.id!, data);
+                                if (sheetCtx.mounted) {
+                                  Navigator.pop(sheetCtx);
+                                  if (success) {
+                                    sheetCtx.read<DashboardViewModel>().loadDashboard();
+                                  } else {
+                                    ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                                      SnackBar(
+                                        content: Text(vm.errorMessage ?? 'Gagal menyimpan'),
+                                        backgroundColor: const Color(0xFFEF4444),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1598A3),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: vm.isMutating
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                item == null ? 'Simpan' : 'Perbarui',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -488,7 +580,33 @@ class _PengeluaranCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                if (item.kategori != null && item.kategori!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1598A3).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF1598A3).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Text(
+                          item.kategori!,
+                          style: const TextStyle(
+                            color: Color(0xFF1598A3),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 6),
                 Text(
                   'TGL: ${item.tanggal} • OLEH: ${item.createdBy ?? '1'}',
                   style: const TextStyle(

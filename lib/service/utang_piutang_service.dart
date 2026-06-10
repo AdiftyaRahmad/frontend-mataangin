@@ -72,9 +72,16 @@ class UtangPiutangService {
   ///   - Piutang lunas → creates a Pemasukan record (customer paid us)
   ///   - Utang lunas   → creates a Pengeluaran record (we paid supplier)
   ///
+  /// [settlementDate] — optional date for the settlement record. Defaults to today.
+  /// Use this to record the settlement on a different day (e.g., tomorrow).
+  ///
   /// Returns a record indicating whether a settlement record was created:
   ///   { 'updatedItem': UtangPiutangModel, 'settlementCreated': bool, 'settlementType': String? }
-  Future<Map<String, dynamic>> updateWithSettlement(String id, UtangPiutangModel utangPiutang) async {
+  Future<Map<String, dynamic>> updateWithSettlement(
+    String id,
+    UtangPiutangModel utangPiutang, {
+    DateTime? settlementDate,
+  }) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
       throw Exception('Pengguna tidak terautentikasi.');
@@ -112,9 +119,10 @@ class UtangPiutangService {
       batch.update(_ref.doc(id), updateData);
 
       // 2. Create settlement record
-      final now = DateTime.now();
-      final todayStr = DateFormat('yyyy-MM-dd').format(now);
-      final hariIndo = _getHariIndonesia(now.weekday);
+      // Use provided settlementDate, or default to today
+      final recordDate = settlementDate ?? DateTime.now();
+      final todayStr = DateFormat('yyyy-MM-dd').format(recordDate);
+      final hariIndo = _getHariIndonesia(recordDate.weekday);
       final tipe = utangPiutang.tipe.toLowerCase();
 
       if (tipe == 'piutang' || tipe == 'customer') {

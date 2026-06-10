@@ -6,7 +6,7 @@ abstract class IUtangPiutangRepository {
   Future<UtangPiutangModel> getById(String id);
   Future<UtangPiutangModel> create(UtangPiutangModel utangPiutang);
   Future<UtangPiutangModel> update(String id, UtangPiutangModel utangPiutang);
-  Future<Map<String, dynamic>> updateWithSettlement(String id, UtangPiutangModel utangPiutang);
+  Future<Map<String, dynamic>> updateWithSettlement(String id, UtangPiutangModel utangPiutang, {DateTime? settlementDate});
   Future<void> delete(String id);
 }
 
@@ -31,8 +31,8 @@ class UtangPiutangRepository implements IUtangPiutangRepository {
       _service.update(id, utangPiutang);
 
   @override
-  Future<Map<String, dynamic>> updateWithSettlement(String id, UtangPiutangModel utangPiutang) =>
-      _service.updateWithSettlement(id, utangPiutang);
+  Future<Map<String, dynamic>> updateWithSettlement(String id, UtangPiutangModel utangPiutang, {DateTime? settlementDate}) =>
+      _service.updateWithSettlement(id, utangPiutang, settlementDate: settlementDate);
 
   @override
   Future<void> delete(String id) => _service.delete(id);

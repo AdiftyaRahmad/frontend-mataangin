@@ -253,13 +253,21 @@ Widget build(BuildContext context) {
                   )
                 else if (dashVm.state == ViewState.error)
                   _ErrorCard(message: dashVm.errorMessage ?? 'Gagal memuat')
-                else
+                else ...[
                   _SaldoCard(
                     saldo: dashVm.dashboard.saldo,
                     pemasukan: dashVm.dashboard.totalPemasukan,
                     pengeluaran: dashVm.dashboard.totalPengeluaran,
                     fmt: fmt,
                   ),
+                  const SizedBox(height: 16),
+                  _RingkasanKeuanganCard(
+                    saldo: dashVm.dashboard.saldo,
+                    pemasukan: dashVm.dashboard.totalPemasukan,
+                    pengeluaran: dashVm.dashboard.totalPengeluaran,
+                    fmt: fmt,
+                  ),
+                ],
 
                 const SizedBox(height: 28),
 
@@ -620,6 +628,284 @@ class _EmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Ringkasan Keuangan Card ──────────────────────────────────────────────────
+
+class _RingkasanKeuanganCard extends StatelessWidget {
+  final double saldo;
+  final double pemasukan;
+  final double pengeluaran;
+  final NumberFormat fmt;
+
+  const _RingkasanKeuanganCard({
+    required this.saldo,
+    required this.pemasukan,
+    required this.pengeluaran,
+    required this.fmt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Dynamic savings rate / net margin
+    double pct = 0.0;
+    if (pemasukan > 0) {
+      pct = (saldo / pemasukan) * 100;
+    } else if (pengeluaran > 0) {
+      pct = -100.0;
+    }
+
+    final total = pemasukan + pengeluaran;
+    final double pemasukanPct = total > 0 ? (pemasukan / total) : 0.0;
+    final double pengeluaranPct = total > 0 ? (pengeluaran / total) : 0.0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ringkasan Keuangan',
+            style: TextStyle(
+              color: _kTextSub,
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            fmt.format(saldo),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildTrendPill(pct),
+          const SizedBox(height: 16),
+          Center(
+            child: SizedBox(
+              width: 180,
+              height: 180,
+              child: _DonutChart(
+                pemasukan: pemasukan,
+                pengeluaran: pengeluaran,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _LegendItem(
+            label: 'Pemasukan',
+            amount: pemasukan,
+            percentage: pemasukanPct,
+            color: _kGreen,
+            fmt: fmt,
+          ),
+          const SizedBox(height: 12),
+          _LegendItem(
+            label: 'Pengeluaran',
+            amount: pengeluaran,
+            percentage: pengeluaranPct,
+            color: _kRed,
+            fmt: fmt,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendPill(double pct) {
+    final isPositive = pct >= 0;
+    final color = isPositive ? _kGreen : _kRed;
+    final icon = isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            '${pct.abs().toStringAsFixed(1)}%',
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Donut Chart ──────────────────────────────────────────────────────────────
+
+class _DonutChart extends StatelessWidget {
+  final double pemasukan;
+  final double pengeluaran;
+
+  const _DonutChart({
+    required this.pemasukan,
+    required this.pengeluaran,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = pemasukan + pengeluaran;
+    final double pemasukanPct = total > 0 ? (pemasukan / total) : 0.0;
+    final double pengeluaranPct = total > 0 ? (pengeluaran / total) : 0.0;
+    final isZero = pemasukan == 0 && pengeluaran == 0;
+
+    return CustomPaint(
+      painter: _DonutChartPainter(
+        pemasukanPct: isZero ? 0.0 : pemasukanPct,
+        pengeluaranPct: isZero ? 0.0 : pengeluaranPct,
+        isZero: isZero,
+      ),
+    );
+  }
+}
+
+class _DonutChartPainter extends CustomPainter {
+  final double pemasukanPct;
+  final double pengeluaranPct;
+  final bool isZero;
+
+  _DonutChartPainter({
+    required this.pemasukanPct,
+    required this.pengeluaranPct,
+    required this.isZero,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final strokeWidth = 24.0;
+    final radius = (size.width - strokeWidth) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final paintBg = Paint()
+      ..color = const Color(0xFF2E2E2E)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    if (isZero) {
+      canvas.drawCircle(center, radius, paintBg);
+      return;
+    }
+
+    final paintPemasukan = Paint()
+      ..color = _kGreen
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    final paintPengeluaran = Paint()
+      ..color = _kRed
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    // Start drawing from the top (-pi/2)
+    double startAngle = -3.141592653589793 / 2;
+
+    // Draw Pemasukan (Green)
+    final sweepPemasukan = 2 * 3.141592653589793 * pemasukanPct;
+    canvas.drawArc(rect, startAngle, sweepPemasukan, false, paintPemasukan);
+
+    // Draw Pengeluaran (Red)
+    final sweepPengeluaran = 2 * 3.141592653589793 * pengeluaranPct;
+    canvas.drawArc(rect, startAngle + sweepPemasukan, sweepPengeluaran, false, paintPengeluaran);
+  }
+
+  @override
+  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
+    return oldDelegate.pemasukanPct != pemasukanPct ||
+        oldDelegate.pengeluaranPct != pengeluaranPct ||
+        oldDelegate.isZero != isZero;
+  }
+}
+
+// ─── Legend Item ──────────────────────────────────────────────────────────────
+
+class _LegendItem extends StatelessWidget {
+  final String label;
+  final double amount;
+  final double percentage;
+  final Color color;
+  final NumberFormat fmt;
+
+  const _LegendItem({
+    required this.label,
+    required this.amount,
+    required this.percentage,
+    required this.color,
+    required this.fmt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 4,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: _kTextPrim,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 4,
+          child: Text(
+            fmt.format(amount),
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: _kTextPrim,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            '${(percentage * 100).toStringAsFixed(2)}%',
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: _kTextSub,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
