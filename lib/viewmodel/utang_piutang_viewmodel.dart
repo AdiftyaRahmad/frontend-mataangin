@@ -99,12 +99,16 @@ class UtangPiutangViewModel extends ChangeNotifier {
   ///   - 'settlementCreated': bool
   ///   - 'settlementType': String? ('pemasukan' or 'pengeluaran')
   ///   - 'settlementAmount': double
-  Future<Map<String, dynamic>> updateWithSettlement(String id, UtangPiutangModel item) async {
+  Future<Map<String, dynamic>> updateWithSettlement(
+    String id,
+    UtangPiutangModel item, {
+    DateTime? settlementDate,
+  }) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      final result = await _repository.updateWithSettlement(id, item);
+      final result = await _repository.updateWithSettlement(id, item, settlementDate: settlementDate);
       final updated = result['updatedItem'] as UtangPiutangModel;
       final idx = _list.indexWhere((e) => e.id == id);
       if (idx != -1) {

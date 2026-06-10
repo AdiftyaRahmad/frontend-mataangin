@@ -47,7 +47,7 @@ class LaporanService {
       final data = doc.data();
       final amount = (data['nominal'] as num?)?.toDouble() ?? 0.0;
       totalPengeluaran += amount;
-      final kat = data['kategori'] ?? 'Pengeluaran lainya';
+      final kat = data['kategori'] ?? 'Lainnya';
       final ket = data['keterangan'] ?? '';
       final desc = ket.toString().isNotEmpty ? '[$kat] $ket' : '[$kat]';
       transaksi.add(LaporanItem(
@@ -117,7 +117,7 @@ class LaporanService {
           ? dateTimestamp.toDate().toIso8601String().split('T')[0]
           : '';
 
-      final kat = data['kategori'] ?? 'Pengeluaran lainya';
+      final kat = data['kategori'] ?? 'Lainnya';
       final ket = data['keterangan'] ?? '';
       final desc = ket.toString().isNotEmpty ? '[$kat] $ket' : '[$kat]';
       transaksi.add(LaporanItem(

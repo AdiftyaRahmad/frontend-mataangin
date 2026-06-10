@@ -639,20 +639,27 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                       // UPDATE - check if becoming lunas
                                       final isBecomingLunas = item.status == 'belum_lunas' && newStatus == 'lunas';
 
+                                      DateTime? chosenSettlementDate;
+
                                       if (isBecomingLunas) {
-                                        // Show confirmation dialog for settlement
-                                        final confirmed = await _showSettlementConfirmation(
+                                        // Show confirmation dialog for settlement (now returns Map)
+                                        final confirmation = await _showSettlementConfirmation(
                                           context,
                                           selectedTipe,
                                           item.sisaPembayaran,
                                           item.nama,
                                           fmtCur,
                                         );
-                                        if (confirmed != true) return;
+                                        if (confirmation == null || confirmation['confirmed'] != true) return;
+                                        chosenSettlementDate = confirmation['settlementDate'] as DateTime?;
                                       }
 
                                       // Use updateWithSettlement to handle settlement logic
-                                      final result = await vm.updateWithSettlement(item.id!, model);
+                                      final result = await vm.updateWithSettlement(
+                                        item.id!,
+                                        model,
+                                        settlementDate: chosenSettlementDate,
+                                      );
 
                                       if (context.mounted) {
                                         Navigator.pop(sheetCtx);
@@ -731,8 +738,9 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
     );
   }
 
-  /// Show confirmation dialog before recording settlement
-  Future<bool?> _showSettlementConfirmation(
+  /// Show confirmation dialog before recording settlement.
+  /// Returns `{'confirmed': true, 'settlementDate': DateTime}` or `null` if cancelled.
+  Future<Map<String, dynamic>?> _showSettlementConfirmation(
     BuildContext context,
     String tipe,
     double amount,
@@ -743,109 +751,232 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
     final targetLabel = isPiutang ? 'Pemasukan' : 'Pengeluaran';
     final icon = isPiutang ? Icons.trending_up : Icons.trending_down;
     final color = isPiutang ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final today = DateTime.now();
+    final tomorrow = today.add(const Duration(days: 1));
 
-    return showDialog<bool>(
+    // selectedDay: 0 = hari ini, 1 = besok
+    int selectedDay = 0;
+
+    return showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 22),
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          final chosenDate = selectedDay == 0 ? today : tomorrow;
+          final chosenLabel = selectedDay == 0
+              ? DateFormat('dd MMM yyyy', 'id_ID').format(today)
+              : DateFormat('dd MMM yyyy', 'id_ID').format(tomorrow);
+
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Konfirmasi Pelunasan',
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Konfirmasi Pelunasan',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isPiutang
-                  ? 'Piutang dari "$nama" akan dilunasi.'
-                  : 'Utang kepada "$nama" akan dilunasi.',
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withValues(alpha: 0.25)),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isPiutang
+                      ? 'Piutang dari "$nama" akan dilunasi.'
+                      : 'Utang kepada "$nama" akan dilunasi.',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                // ── Summary Info Card ─────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: color.withValues(alpha: 0.25)),
+                  ),
+                  child: Column(
                     children: [
-                      const Text('Jumlah Pelunasan', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                      Text(
-                        fmtCur.format(amount),
-                        style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Jumlah Pelunasan', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          Text(
+                            fmtCur.format(amount),
+                            style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Tercatat Sebagai', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              targetLabel.toUpperCase(),
+                              style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Tercatat Sebagai', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
+                ),
+                const SizedBox(height: 16),
+                // ── Settlement Date Picker ─────────────────────────────
+                const Text(
+                  'Catat saldo pada hari:',
+                  style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    // Hari Ini button
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setDialogState(() => selectedDay = 0),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: selectedDay == 0
+                                ? color.withValues(alpha: 0.18)
+                                : const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: selectedDay == 0 ? color : const Color(0xFF334155),
+                              width: selectedDay == 0 ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.today_rounded,
+                                size: 18,
+                                color: selectedDay == 0 ? color : Colors.white38,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Hari Ini',
+                                style: TextStyle(
+                                  color: selectedDay == 0 ? color : Colors.white54,
+                                  fontSize: 12,
+                                  fontWeight: selectedDay == 0 ? FontWeight.w700 : FontWeight.w400,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                DateFormat('dd MMM', 'id_ID').format(today),
+                                style: TextStyle(
+                                  color: selectedDay == 0 ? color.withValues(alpha: 0.8) : Colors.white30,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Text(
-                          targetLabel.toUpperCase(),
-                          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Besok button
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setDialogState(() => selectedDay = 1),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: selectedDay == 1
+                                ? color.withValues(alpha: 0.18)
+                                : const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: selectedDay == 1 ? color : const Color(0xFF334155),
+                              width: selectedDay == 1 ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.event_rounded,
+                                size: 18,
+                                color: selectedDay == 1 ? color : Colors.white38,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Besok',
+                                style: TextStyle(
+                                  color: selectedDay == 1 ? color : Colors.white54,
+                                  fontSize: 12,
+                                  fontWeight: selectedDay == 1 ? FontWeight.w700 : FontWeight.w400,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                DateFormat('dd MMM', 'id_ID').format(tomorrow),
+                                style: TextStyle(
+                                  color: selectedDay == 1 ? color.withValues(alpha: 0.8) : Colors.white30,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Tanggal', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                      Text(
-                        DateFormat('dd MMM yyyy', 'id_ID').format(DateTime.now()),
-                        style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Chosen date label
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle_outline, size: 13, color: Colors.white38),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Saldo akan masuk pada: $chosenLabel',
+                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx, null),
+                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: color,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Lunaskan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-          ),
-        ],
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogCtx, {
+                  'confirmed': true,
+                  'settlementDate': chosenDate,
+                }),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: color,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Lunaskan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
