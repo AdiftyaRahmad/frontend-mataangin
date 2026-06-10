@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import '../model/pengeluaran_model.dart';
 import '../service/pengeluaran_service.dart';
 
@@ -7,6 +8,8 @@ abstract class IPengeluaranRepository {
   Future<PengeluaranModel> create(PengeluaranModel pengeluaran);
   Future<PengeluaranModel> update(String id, PengeluaranModel pengeluaran);
   Future<void> delete(String id);
+  Future<String> uploadBukti(Uint8List fileBytes, String fileName);
+  Future<void> deleteBukti(String downloadUrl);
 }
 
 class PengeluaranRepository implements IPengeluaranRepository {
@@ -31,4 +34,11 @@ class PengeluaranRepository implements IPengeluaranRepository {
 
   @override
   Future<void> delete(String id) => _service.delete(id);
+
+  @override
+  Future<String> uploadBukti(Uint8List fileBytes, String fileName) =>
+      _service.uploadBukti(fileBytes, fileName);
+
+  @override
+  Future<void> deleteBukti(String downloadUrl) => _service.deleteBukti(downloadUrl);
 }

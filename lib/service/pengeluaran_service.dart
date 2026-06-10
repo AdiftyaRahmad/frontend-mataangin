@@ -1,14 +1,39 @@
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../model/pengeluaran_model.dart';
 
 class PengeluaranService {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final FirebaseStorage _storage;
 
-  PengeluaranService({FirebaseFirestore? firestore, FirebaseAuth? auth})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  PengeluaranService({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    FirebaseStorage? storage,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        _storage = storage ?? FirebaseStorage.instance;
+
+  /// Upload receipt file (image/PDF) to Firebase Storage
+  Future<String> uploadBukti(Uint8List fileBytes, String fileName) async {
+    final ref = _storage.ref().child('bukti_pengeluaran/${DateTime.now().millisecondsSinceEpoch}_$fileName');
+    final uploadTask = ref.putData(fileBytes);
+    final snapshot = await uploadTask;
+    return await snapshot.ref.getDownloadURL();
+  }
+
+  /// Delete receipt file from Firebase Storage by download URL
+  Future<void> deleteBukti(String downloadUrl) async {
+    try {
+      final ref = _storage.refFromURL(downloadUrl);
+      await ref.delete();
+    } catch (e) {
+      // Ignore or log error if file not found
+    }
+  }
 
   CollectionReference<Map<String, dynamic>> get _ref => _firestore.collection('pengeluaran');
 
@@ -85,6 +110,7 @@ class PengeluaranService {
       'keterangan': model.keterangan ?? '',
       'kategori': model.kategori ?? 'Lainnya',
       'tanggal': Timestamp.fromDate(parsedDate),
+      'bukti_url': model.buktiUrl,
       'created_by': uid,
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
@@ -113,6 +139,7 @@ class PengeluaranService {
       keterangan: data['keterangan'],
       kategori: data['kategori'] ?? 'Lainnya',
       tanggal: dateStr,
+      buktiUrl: data['bukti_url'] ?? data['buktiUrl'],
       createdBy: data['created_by'],
       createdAt: (data['created_at'] as Timestamp?)?.toDate().toIso8601String(),
       updatedAt: (data['updated_at'] as Timestamp?)?.toDate().toIso8601String(),

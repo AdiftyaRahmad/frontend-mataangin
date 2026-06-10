@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../core/constants/app_enums.dart';
 import '../model/pengeluaran_model.dart';
@@ -39,12 +40,17 @@ class PengeluaranViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> create(PengeluaranModel pengeluaran) async {
+  Future<bool> create(PengeluaranModel pengeluaran, {Uint8List? fileBytes, String? fileName}) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      final created = await _repository.create(pengeluaran);
+      String? downloadUrl;
+      if (fileBytes != null && fileName != null) {
+        downloadUrl = await _repository.uploadBukti(fileBytes, fileName);
+      }
+      final modelWithBukti = pengeluaran.copyWith(buktiUrl: downloadUrl);
+      final created = await _repository.create(modelWithBukti);
       _list = [created, ..._list];
       _mutating = false;
       notifyListeners();
@@ -57,12 +63,34 @@ class PengeluaranViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> update(String id, PengeluaranModel pengeluaran) async {
+  Future<bool> update(
+    String id,
+    PengeluaranModel pengeluaran, {
+    Uint8List? fileBytes,
+    String? fileName,
+    bool deleteExistingBukti = false,
+  }) async {
     _mutating = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      final updated = await _repository.update(id, pengeluaran);
+      // Find original item to see if it already has a receipt
+      final existingItem = _list.firstWhere((e) => e.id == id);
+      String? downloadUrl = existingItem.buktiUrl;
+
+      // If deleteExistingBukti is true, or if we are uploading a new one, delete the old file
+      if ((deleteExistingBukti || fileBytes != null) && existingItem.buktiUrl != null) {
+        await _repository.deleteBukti(existingItem.buktiUrl!);
+        downloadUrl = null;
+      }
+
+      // Upload new file if provided
+      if (fileBytes != null && fileName != null) {
+        downloadUrl = await _repository.uploadBukti(fileBytes, fileName);
+      }
+
+      final modelWithBukti = pengeluaran.copyWith(buktiUrl: downloadUrl);
+      final updated = await _repository.update(id, modelWithBukti);
       final idx = _list.indexWhere((e) => e.id == id);
       if (idx != -1) {
         final mutable = List<PengeluaranModel>.from(_list);
@@ -85,6 +113,13 @@ class PengeluaranViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
+      // Find item to delete
+      final existingItem = _list.firstWhere((e) => e.id == id);
+      // Delete file from storage if exists
+      if (existingItem.buktiUrl != null) {
+        await _repository.deleteBukti(existingItem.buktiUrl!);
+      }
+
       await _repository.delete(id);
       _list = _list.where((e) => e.id != id).toList();
       _mutating = false;
