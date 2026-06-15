@@ -47,7 +47,7 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
         elevation: 0,
         title: const Text(
           'Utang Piutang',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 20),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 28),
         ),
         actions: [
           IconButton(
@@ -67,22 +67,32 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'utang_piutang_fab',
-        backgroundColor: const Color(0xFF1598A3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-        onPressed: () => _showFormDialog(context),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 16, right: 8),
+        child: SizedBox(
+          width: 60,
+          height: 60,
+          child: FloatingActionButton(
+            heroTag: 'utang_piutang_fab',
+            backgroundColor: const Color(0xFF1598A3),
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            onPressed: () => _showFormDialog(context),
+            child: const Icon(Icons.add, color: Colors.white, size: 30),
+          ),
+        ),
       ),
       body: Column(
         children: [
           // ── Stat Banner ──────────────────────────────────────────────────
           Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             decoration: BoxDecoration(
               color: const Color(0xFF0A4D54),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Row(
               children: [
@@ -92,20 +102,20 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                     children: [
                       const Text(
                         'Total Utang',
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         fmt.format(vm.totalUtang),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         'Belum Lunas: ${fmt.format(vm.totalBelumLunasUtang)}',
-                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                        style: const TextStyle(color: Colors.white38, fontSize: 11),
                       ),
                     ],
                   ),
@@ -118,20 +128,20 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                     children: [
                       const Text(
                         'Total Piutang',
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         fmt.format(vm.totalPiutang),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         'Belum Lunas: ${fmt.format(vm.totalBelumLunasPiutang)}',
-                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                        style: const TextStyle(color: Colors.white38, fontSize: 11),
                       ),
                     ],
                   ),
@@ -226,7 +236,7 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1C),
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -380,7 +390,7 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
             child: Container(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
               decoration: const BoxDecoration(
-                color: Color(0xFF1C1C1C),
+                color: Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(30),
                   topRight: Radius.circular(30),
@@ -472,7 +482,7 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                         label: 'Tipe',
                         child: DropdownButtonFormField<String>(
                           initialValue: selectedTipe,
-                          dropdownColor: const Color(0xFF1C1C1C),
+                          dropdownColor: const Color(0xFF1E1E1E),
                           style: _inputTextStyle,
                           iconEnabledColor: const Color(0xFF1E1E1E),
                           decoration: _tealInputDecoration(),
@@ -752,232 +762,118 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
     final icon = isPiutang ? Icons.trending_up : Icons.trending_down;
     final color = isPiutang ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
     final today = DateTime.now();
-    final tomorrow = today.add(const Duration(days: 1));
-
-    // selectedDay: 0 = hari ini, 1 = besok
-    int selectedDay = 0;
 
     return showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) {
-          final chosenDate = selectedDay == 0 ? today : tomorrow;
-          final chosenLabel = selectedDay == 0
-              ? DateFormat('dd MMM yyyy', 'id_ID').format(today)
-              : DateFormat('dd MMM yyyy', 'id_ID').format(tomorrow);
-
-          return AlertDialog(
-            backgroundColor: const Color(0xFF1E293B),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: color, size: 22),
+      builder: (dialogCtx) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Konfirmasi Pelunasan',
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isPiutang
-                      ? 'Piutang dari "$nama" akan dilunasi.'
-                      : 'Utang kepada "$nama" akan dilunasi.',
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 16),
-                // ── Summary Info Card ─────────────────────────────────
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: color.withValues(alpha: 0.25)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Jumlah Pelunasan', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                          Text(
-                            fmtCur.format(amount),
-                            style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Tercatat Sebagai', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              targetLabel.toUpperCase(),
-                              style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // ── Settlement Date Picker ─────────────────────────────
-                const Text(
-                  'Catat saldo pada hari:',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    // Hari Ini button
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setDialogState(() => selectedDay = 0),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: selectedDay == 0
-                                ? color.withValues(alpha: 0.18)
-                                : const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: selectedDay == 0 ? color : const Color(0xFF334155),
-                              width: selectedDay == 0 ? 1.5 : 1,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.today_rounded,
-                                size: 18,
-                                color: selectedDay == 0 ? color : Colors.white38,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Hari Ini',
-                                style: TextStyle(
-                                  color: selectedDay == 0 ? color : Colors.white54,
-                                  fontSize: 12,
-                                  fontWeight: selectedDay == 0 ? FontWeight.w700 : FontWeight.w400,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                DateFormat('dd MMM', 'id_ID').format(today),
-                                style: TextStyle(
-                                  color: selectedDay == 0 ? color.withValues(alpha: 0.8) : Colors.white30,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    // Besok button
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setDialogState(() => selectedDay = 1),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: selectedDay == 1
-                                ? color.withValues(alpha: 0.18)
-                                : const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: selectedDay == 1 ? color : const Color(0xFF334155),
-                              width: selectedDay == 1 ? 1.5 : 1,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.event_rounded,
-                                size: 18,
-                                color: selectedDay == 1 ? color : Colors.white38,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Besok',
-                                style: TextStyle(
-                                  color: selectedDay == 1 ? color : Colors.white54,
-                                  fontSize: 12,
-                                  fontWeight: selectedDay == 1 ? FontWeight.w700 : FontWeight.w400,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                DateFormat('dd MMM', 'id_ID').format(tomorrow),
-                                style: TextStyle(
-                                  color: selectedDay == 1 ? color.withValues(alpha: 0.8) : Colors.white30,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                // Chosen date label
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle_outline, size: 13, color: Colors.white38),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Saldo akan masuk pada: $chosenLabel',
-                      style: const TextStyle(color: Colors.white38, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogCtx, null),
-                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+                child: Icon(icon, color: color, size: 22),
               ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(dialogCtx, {
-                  'confirmed': true,
-                  'settlementDate': chosenDate,
-                }),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: color,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Konfirmasi Pelunasan',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
                 ),
-                child: const Text('Lunaskan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
               ),
             ],
-          );
-        },
-      ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isPiutang
+                    ? 'Piutang dari "$nama" akan dilunasi.'
+                    : 'Utang kepada "$nama" akan dilunasi.',
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              // ── Summary Info Card ─────────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withValues(alpha: 0.25)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Jumlah Pelunasan', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        Text(
+                          fmtCur.format(amount),
+                          style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Tercatat Sebagai', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            targetLabel.toUpperCase(),
+                            style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, size: 14, color: Colors.white38),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Pelunasan akan otomatis tercatat sebagai $targetLabel hari ini (${DateFormat('dd MMM yyyy', 'id_ID').format(today)}).',
+                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, null),
+              child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogCtx, {
+                'confirmed': true,
+                'settlementDate': today,
+              }),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Lunaskan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -72,7 +72,7 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
         elevation: 0,
         title: const Text(
           'Laporan Keuangan',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 20),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 28),
         ),
         actions: [
           AdminOnlyWidget(
@@ -139,7 +139,7 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
         // ── Date Selector ──────────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: const Color(0xFF1C1C1C),
+          color: const Color(0xFF1E1E1E),
           child: Row(
             children: [
               const Icon(Icons.calendar_today_outlined, color: Colors.white54, size: 20),
@@ -194,13 +194,13 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
         // ── Month/Year Selector ────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: const Color(0xFF1C1C1C),
+          color: const Color(0xFF1E1E1E),
           child: Row(
             children: [
               Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: _selectedMonth,
-                  dropdownColor: const Color(0xFF1C1C1C),
+                  dropdownColor: const Color(0xFF1E1E1E),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: _dropdownDecoration('Bulan'),
                   items: List.generate(12, (i) {
@@ -223,7 +223,7 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
               Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: _selectedYear,
-                  dropdownColor: const Color(0xFF1C1C1C),
+                  dropdownColor: const Color(0xFF1E1E1E),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: _dropdownDecoration('Tahun'),
                   items: _years.map((y) {
@@ -262,11 +262,11 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
   Widget _buildSummaryCards(LaporanModel laporan, NumberFormat fmt) {
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
         color: const Color(0xFF0A4D54),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         children: [
@@ -276,11 +276,11 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Total Pemasukan', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const Text('Total Pemasukan', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 4),
                     Text(
                       fmt.format(laporan.totalPemasukan),
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -291,11 +291,11 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Total Pengeluaran', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    const Text('Total Pengeluaran', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 4),
                     Text(
                       fmt.format(laporan.totalPengeluaran),
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -308,10 +308,10 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Selisih / Saldo', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500)),
+              const Text('Selisih / Saldo', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
               Text(
                 fmt.format(laporan.saldo),
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -346,7 +346,7 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1C),
+            color: const Color(0xFF1E1E1E),
             borderRadius: BorderRadius.circular(24),
           ),
           child: Row(

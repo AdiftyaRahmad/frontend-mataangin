@@ -718,19 +718,23 @@ class _ExpenseBreakdownCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF121212),
+        color: _kCard,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: SizedBox(
-              width: 340,
-              height: 280,
-              child: CustomPaint(
-                painter: _PieChartWithLinesPainter(slices: slices),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SizedBox(
+                  width: constraints.maxWidth,
+                  height: 300,
+                  child: CustomPaint(
+                    painter: _PieChartPainter(slices: slices),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 20),
@@ -802,113 +806,218 @@ class _PieSliceData {
   });
 }
 
-class _PieChartWithLinesPainter extends CustomPainter {
+/// Helper class to hold label positioning data for anti-collision logic.
+class _LabelInfo {
+  final int index;
+  final double middleAngle;
+  final bool isRight;
+  final double extensionX;
+  final double extensionY;
+  double anchorY;
+  final TextPainter painter;
+  final Color color;
+
+  _LabelInfo({
+    required this.index,
+    required this.middleAngle,
+    required this.isRight,
+    required this.extensionX,
+    required this.extensionY,
+    required this.anchorY,
+    required this.painter,
+    required this.color,
+  });
+}
+
+class _PieChartPainter extends CustomPainter {
   final List<_PieSliceData> slices;
 
-  _PieChartWithLinesPainter({required this.slices});
+  _PieChartPainter({required this.slices});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = 100.0;
+    const piVal = 3.141592653589793;
+    final radius = min(size.width * 0.20, size.height * 0.30);
+    const extOffset = 12.0;
+    const labelGap = 18.0;
+    const edgeMargin = 4.0;
 
-    // First draw the slices
-    double startAngle = -3.141592653589793 / 2; // start from top
+    // Label column X positions
+    final rightColX = center.dx + radius + labelGap;
+    final leftColX = center.dx - radius - labelGap;
+    final rightMaxWidth = size.width - rightColX - edgeMargin;
+    final leftMaxWidth = leftColX - edgeMargin;
+
+    // ── Phase 1: Draw pie slices ──────────────────────────────────────
+    double startAngle = -piVal / 2;
+    final List<List<double>> angles = [];
 
     for (final slice in slices) {
-      final sweepAngle = slice.percentage * 2 * 3.141592653589793;
-      if (sweepAngle <= 0) continue;
+      final sweep = slice.percentage * 2 * piVal;
+      angles.add([startAngle, sweep]);
 
-      final paint = Paint()
-        ..color = slice.color
-        ..style = PaintingStyle.fill;
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        paint,
-      );
-
-      // Slices divider border
-      final borderPaint = Paint()
-        ..color = const Color(0xFF121212)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        borderPaint,
-      );
-
-      startAngle += sweepAngle;
+      if (sweep > 0) {
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: radius),
+          startAngle, sweep, true,
+          Paint()..color = slice.color..style = PaintingStyle.fill,
+        );
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: radius),
+          startAngle, sweep, true,
+          Paint()
+            ..color = _kCard
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.0,
+        );
+      }
+      startAngle += sweep;
     }
 
-    // Second pass: Draw the callout lines & labels
-    startAngle = -3.141592653589793 / 2;
+    // ── Phase 2: Build label info ─────────────────────────────────────
+    final List<_LabelInfo> rightLabels = [];
+    final List<_LabelInfo> leftLabels = [];
 
-    for (final slice in slices) {
-      final sweepAngle = slice.percentage * 2 * 3.141592653589793;
-      if (sweepAngle <= 0) continue;
+    for (int i = 0; i < slices.length; i++) {
+      final sweep = angles[i][1];
+      if (sweep <= 0) continue;
 
-      final middleAngle = startAngle + sweepAngle / 2;
-      final dx = cos(middleAngle);
-      final dy = sin(middleAngle);
+      final mid = angles[i][0] + sweep / 2;
+      final dx = cos(mid);
+      final dy = sin(mid);
+      final isRight = dx >= 0;
 
-      // Start line at the edge of the slice
-      final startPoint = center + Offset(dx * radius, dy * radius);
+      final extX = center.dx + dx * (radius + extOffset);
+      final extY = center.dy + dy * (radius + extOffset);
+      final pct = (slices[i].percentage * 100).round();
 
-      // Line angles to bend callouts elegantly
-      final inflectionPoint = center + Offset(dx * (radius + 18), dy * (radius + 18));
-      
-      final isRightSide = dx > 0;
-      final endPoint = Offset(
-        inflectionPoint.dx + (isRightSide ? 14 : -14),
-        inflectionPoint.dy,
+      final span = TextSpan(
+        children: [
+          TextSpan(
+            text: '${slices[i].label}\n',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              height: 1.3,
+            ),
+          ),
+          TextSpan(
+            text: '$pct%',
+            style: TextStyle(
+              color: slices[i].color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              height: 1.3,
+            ),
+          ),
+        ],
       );
 
-      // Draw the lines
-      final linePaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.4)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0;
-
-      canvas.drawLine(startPoint, inflectionPoint, linePaint);
-      canvas.drawLine(inflectionPoint, endPoint, linePaint);
-
-      // Draw text at the end of the line
-      final textSpan = TextSpan(
-        text: '${slice.label.replaceAll(' & ', ' &\n').replaceAll(' / ', ' /\n')}\n${(slice.percentage * 100).toStringAsFixed(0)}%',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 8,
-          fontWeight: FontWeight.w500,
-          height: 1.1,
-        ),
-      );
-
-      final textPainter = TextPainter(
-        text: textSpan,
+      final tp = TextPainter(
+        text: span,
         textDirection: ui.TextDirection.ltr,
-        textAlign: isRightSide ? TextAlign.left : TextAlign.right,
+        textAlign: isRight ? TextAlign.left : TextAlign.right,
       );
-      textPainter.layout();
+      tp.layout(maxWidth: max(isRight ? rightMaxWidth : leftMaxWidth, 40));
 
-      // Position text
-      final textX = isRightSide ? endPoint.dx + 4 : endPoint.dx - textPainter.width - 4;
-      final textY = endPoint.dy - textPainter.height / 2;
-      textPainter.paint(canvas, Offset(textX, textY));
+      final info = _LabelInfo(
+        index: i,
+        middleAngle: mid,
+        isRight: isRight,
+        extensionX: extX,
+        extensionY: extY,
+        anchorY: extY,
+        painter: tp,
+        color: slices[i].color,
+      );
 
-      startAngle += sweepAngle;
+      if (isRight) {
+        rightLabels.add(info);
+      } else {
+        leftLabels.add(info);
+      }
+    }
+
+    // ── Phase 3: Anti-collision (prevent label overlap) ────────────────
+    _resolveOverlaps(rightLabels, size.height);
+    _resolveOverlaps(leftLabels, size.height);
+
+    // ── Phase 4: Draw callout lines and labels ───────────────────────
+    final linePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.35)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    for (final label in [...rightLabels, ...leftLabels]) {
+      // Point on slice edge
+      final edgePoint = Offset(
+        center.dx + cos(label.middleAngle) * radius,
+        center.dy + sin(label.middleAngle) * radius,
+      );
+
+      // Extension point (short radial line beyond pie edge)
+      final extPoint = Offset(label.extensionX, label.extensionY);
+
+      // Anchor point (where the line meets the label column)
+      final anchorX = label.isRight ? rightColX - 4 : leftColX + 4;
+      final anchorPoint = Offset(anchorX, label.anchorY);
+
+      // Draw line: edge → extension → anchor
+      canvas.drawLine(edgePoint, extPoint, linePaint);
+      canvas.drawLine(extPoint, anchorPoint, linePaint);
+
+      // Small colored dot at the anchor
+      canvas.drawCircle(
+        anchorPoint,
+        2.5,
+        Paint()..color = label.color,
+      );
+
+      // Draw text
+      final textX = label.isRight ? rightColX : edgeMargin;
+      final textY = label.anchorY - label.painter.height / 2;
+      label.painter.paint(canvas, Offset(textX, textY));
+    }
+  }
+
+  /// Vertically redistributes labels so they don't overlap each other.
+  void _resolveOverlaps(List<_LabelInfo> labels, double maxHeight) {
+    if (labels.length <= 1) return;
+    labels.sort((a, b) => a.anchorY.compareTo(b.anchorY));
+
+    const minSpacing = 38.0;
+    const margin = 12.0;
+
+    // Push overlapping labels downward
+    for (int i = 1; i < labels.length; i++) {
+      final needed = labels[i - 1].anchorY + minSpacing;
+      if (labels[i].anchorY < needed) {
+        labels[i].anchorY = needed;
+      }
+    }
+
+    // If the last label exceeds the bottom, shift everything upward
+    final bottomEdge = labels.last.anchorY + 16;
+    if (bottomEdge > maxHeight - margin) {
+      final shift = bottomEdge - (maxHeight - margin);
+      for (final l in labels) {
+        l.anchorY -= shift;
+      }
+    }
+
+    // Clamp to top boundary
+    if (labels.first.anchorY < margin + 8) {
+      final shift = (margin + 8) - labels.first.anchorY;
+      for (final l in labels) {
+        l.anchorY += shift;
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _PieChartWithLinesPainter oldDelegate) {
+  bool shouldRepaint(covariant _PieChartPainter oldDelegate) {
     return true;
   }
 }

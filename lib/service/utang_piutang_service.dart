@@ -13,10 +13,44 @@ class UtangPiutangService {
 
   CollectionReference<Map<String, dynamic>> get _ref => _firestore.collection('utang_piutang');
 
+  /// Resolve user name from Firestore users collection
+  Future<String> _resolveUserName(String? uid, Map<String, String>? cache, Map<String, dynamic> docData) async {
+    if (uid == null || uid.isEmpty) return 'Staf';
+    if (cache != null && cache.containsKey(uid)) {
+      return cache[uid]!;
+    }
+
+    final dbName = docData['created_by_name']?.toString();
+    if (dbName != null && dbName.isNotEmpty) {
+      if (cache != null) cache[uid] = dbName;
+      return dbName;
+    }
+
+    String userName = 'Staf';
+    try {
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        userName = userDoc.data()?['name'] ?? 'Staf';
+      }
+    } catch (_) {}
+
+    if (cache != null) cache[uid] = userName;
+    return userName;
+  }
+
   /// GET all utang_piutang records ordered by created_at descending
   Future<List<UtangPiutangModel>> getAll() async {
     final querySnap = await _ref.orderBy('created_at', descending: true).get();
-    return querySnap.docs.map((doc) => _mapFromFirestore(doc)).toList();
+    final List<UtangPiutangModel> list = [];
+    final Map<String, String> cache = {};
+
+    for (final doc in querySnap.docs) {
+      final data = doc.data();
+      final uid = data['created_by']?.toString();
+      final userName = await _resolveUserName(uid, cache, data);
+      list.add(_mapFromFirestore(doc, userName));
+    }
+    return list;
   }
 
   /// GET utang_piutang by ID
@@ -25,7 +59,10 @@ class UtangPiutangService {
     if (!doc.exists) {
       throw Exception('Data Utang/Piutang tidak ditemukan.');
     }
-    return _mapFromFirestore(doc);
+    final data = doc.data()!;
+    final uid = data['created_by']?.toString();
+    final userName = await _resolveUserName(uid, null, data);
+    return _mapFromFirestore(doc, userName);
   }
 
   /// POST /create a new utang_piutang record
@@ -35,10 +72,11 @@ class UtangPiutangService {
       throw Exception('Pengguna tidak terautentikasi.');
     }
 
-    final data = _mapToFirestore(utangPiutang, uid);
+    final userName = await _resolveUserName(uid, null, {});
+    final data = _mapToFirestore(utangPiutang, uid, userName);
     final docRef = await _ref.add(data);
     final doc = await docRef.get();
-    return _mapFromFirestore(doc);
+    return _mapFromFirestore(doc, userName);
   }
 
   /// PUT /update a utang_piutang record
@@ -56,27 +94,18 @@ class UtangPiutangService {
 
     // Avoid updating created_by to satisfy rules
     final originalCreatedBy = existingDoc.data()?['created_by'] ?? uid;
+    final originalCreatedByName = await _resolveUserName(originalCreatedBy, null, existingDoc.data()!);
 
-    final data = _mapToFirestore(utangPiutang, originalCreatedBy);
+    final data = _mapToFirestore(utangPiutang, originalCreatedBy, originalCreatedByName);
     data.remove('created_at'); // Do not overwrite created_at on update
     data['updated_at'] = FieldValue.serverTimestamp();
 
     await _ref.doc(id).update(data);
     final updatedDoc = await _ref.doc(id).get();
-    return _mapFromFirestore(updatedDoc);
+    return _mapFromFirestore(updatedDoc, originalCreatedByName);
   }
 
   /// UPDATE utang/piutang AND auto-record settlement to pemasukan/pengeluaran.
-  ///
-  /// When status changes from 'belum_lunas' → 'lunas':
-  ///   - Piutang lunas → creates a Pemasukan record (customer paid us)
-  ///   - Utang lunas   → creates a Pengeluaran record (we paid supplier)
-  ///
-  /// [settlementDate] — optional date for the settlement record. Defaults to today.
-  /// Use this to record the settlement on a different day (e.g., tomorrow).
-  ///
-  /// Returns a record indicating whether a settlement record was created:
-  ///   { 'updatedItem': UtangPiutangModel, 'settlementCreated': bool, 'settlementType': String? }
   Future<Map<String, dynamic>> updateWithSettlement(
     String id,
     UtangPiutangModel utangPiutang, {
@@ -106,8 +135,9 @@ class UtangPiutangService {
 
     // Avoid updating created_by to satisfy rules
     final originalCreatedBy = existingData['created_by'] ?? uid;
+    final originalCreatedByName = await _resolveUserName(originalCreatedBy, null, existingData);
 
-    final updateData = _mapToFirestore(utangPiutang, originalCreatedBy);
+    final updateData = _mapToFirestore(utangPiutang, originalCreatedBy, originalCreatedByName);
     updateData.remove('created_at');
     updateData['updated_at'] = FieldValue.serverTimestamp();
 
@@ -125,6 +155,9 @@ class UtangPiutangService {
       final hariIndo = _getHariIndonesia(recordDate.weekday);
       final tipe = utangPiutang.tipe.toLowerCase();
 
+      // Ambil nama user dari Firestore untuk pelunasan otomatis
+      final userName = await _resolveUserName(uid, null, {});
+
       if (tipe == 'piutang' || tipe == 'customer') {
         // Piutang lunas → customer pays us → Pemasukan
         final pemasukanRef = _firestore.collection('pemasukan').doc();
@@ -139,6 +172,7 @@ class UtangPiutangService {
           'dp': 0,
           'total_pemasukan': settlementAmount.toInt(),
           'created_by': uid,
+          'created_by_name': userName,
           'created_at': FieldValue.serverTimestamp(),
           'updated_at': FieldValue.serverTimestamp(),
           'keterangan_pelunasan': 'Pelunasan piutang: ${utangPiutang.nama}',
@@ -153,6 +187,7 @@ class UtangPiutangService {
           'kategori': 'Lainnya',
           'tanggal': Timestamp.fromDate(DateTime.parse(todayStr)),
           'created_by': uid,
+          'created_by_name': userName,
           'created_at': FieldValue.serverTimestamp(),
           'updated_at': FieldValue.serverTimestamp(),
         });
@@ -164,7 +199,7 @@ class UtangPiutangService {
       // Fetch updated document
       final updatedDoc = await _ref.doc(id).get();
       return {
-        'updatedItem': _mapFromFirestore(updatedDoc),
+        'updatedItem': _mapFromFirestore(updatedDoc, originalCreatedByName),
         'settlementCreated': true,
         'settlementType': (tipe == 'piutang' || tipe == 'customer') ? 'pemasukan' : 'pengeluaran',
         'settlementAmount': settlementAmount,
@@ -174,7 +209,7 @@ class UtangPiutangService {
       await _ref.doc(id).update(updateData);
       final updatedDoc = await _ref.doc(id).get();
       return {
-        'updatedItem': _mapFromFirestore(updatedDoc),
+        'updatedItem': _mapFromFirestore(updatedDoc, originalCreatedByName),
         'settlementCreated': false,
         'settlementType': null,
         'settlementAmount': 0.0,
@@ -210,7 +245,7 @@ class UtangPiutangService {
   }
 
   /// Helper to convert UtangPiutangModel to Firestore map
-  Map<String, dynamic> _mapToFirestore(UtangPiutangModel model, String uid) {
+  Map<String, dynamic> _mapToFirestore(UtangPiutangModel model, String uid, String userName) {
     return {
       'nama_customer': model.nama,
       'tipe': model.tipe,
@@ -220,13 +255,14 @@ class UtangPiutangService {
       'status': model.status,
       'keterangan': model.keterangan ?? '',
       'created_by': uid,
+      'created_by_name': userName,
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
     };
   }
 
   /// Helper to map Firestore Document to UtangPiutangModel
-  UtangPiutangModel _mapFromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  UtangPiutangModel _mapFromFirestore(DocumentSnapshot<Map<String, dynamic>> doc, String userName) {
     final data = doc.data();
     if (data == null) {
       throw Exception('Data kosong.');
@@ -241,7 +277,7 @@ class UtangPiutangService {
       sisaPembayaran: (data['sisa_pembayaran'] as num?)?.toDouble() ?? 0.0,
       status: data['status'] ?? 'belum_lunas',
       keterangan: data['keterangan'],
-      createdBy: data['created_by'],
+      createdBy: userName,
       createdAt: (data['created_at'] as Timestamp?)?.toDate().toIso8601String(),
       updatedAt: (data['updated_at'] as Timestamp?)?.toDate().toIso8601String(),
     );

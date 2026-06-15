@@ -44,50 +44,68 @@ class PengeluaranView extends StatelessWidget {
           const SizedBox(width: 8),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'pengeluaran_fab',
-        backgroundColor: const Color(0xFFB32626),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-        onPressed: () => _showFormDialog(context),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 16, right: 8),
+        child: SizedBox(
+          width: 60,
+          height: 60,
+          child: FloatingActionButton(
+            heroTag: 'pengeluaran_fab',
+            backgroundColor: const Color(0xFFB32626),
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            onPressed: () => _showFormDialog(context),
+            child: const Icon(Icons.add, color: Colors.white, size: 30),
+          ),
+        ),
       ),
       body: Column(
         children: [
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             decoration: BoxDecoration(
               color: const Color(0xFFB32626),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Icon(Icons.trending_down, color: Colors.white, size: 40),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'TOTAL PENGELUARAN',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.trending_down,
+                      color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Total Pengeluaran',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      fmt.format(vm.totalPengeluaran),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 4),
+                      Text(
+                        fmt.format(vm.totalPengeluaran),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -972,7 +990,7 @@ class _PengeluaranCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'TGL: ${item.tanggal} • OLEH: ${item.createdBy ?? '1'}',
+                  'TGL: ${item.tanggal} • Dibuat oleh: ${item.createdBy ?? '-'}',
                   style: const TextStyle(
                     color: Colors.white54,
                     fontSize: 11,

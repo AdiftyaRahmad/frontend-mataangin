@@ -12,10 +12,44 @@ class PemasukanService {
 
   CollectionReference<Map<String, dynamic>> get _ref => _firestore.collection('pemasukan');
 
+  /// Resolve user name from Firestore users collection
+  Future<String> _resolveUserName(String? uid, Map<String, String>? cache, Map<String, dynamic> docData) async {
+    if (uid == null || uid.isEmpty) return 'Staf';
+    if (cache != null && cache.containsKey(uid)) {
+      return cache[uid]!;
+    }
+
+    final dbName = docData['created_by_name']?.toString();
+    if (dbName != null && dbName.isNotEmpty) {
+      if (cache != null) cache[uid] = dbName;
+      return dbName;
+    }
+
+    String userName = 'Staf';
+    try {
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        userName = userDoc.data()?['name'] ?? 'Staf';
+      }
+    } catch (_) {}
+
+    if (cache != null) cache[uid] = userName;
+    return userName;
+  }
+
   /// GET all pemasukan records ordered by date descending
   Future<List<PemasukanModel>> getAll() async {
     final querySnap = await _ref.orderBy('tanggal', descending: true).get();
-    return querySnap.docs.map((doc) => _mapFromFirestore(doc)).toList();
+    final List<PemasukanModel> list = [];
+    final Map<String, String> cache = {};
+
+    for (final doc in querySnap.docs) {
+      final data = doc.data();
+      final uid = data['created_by']?.toString();
+      final userName = await _resolveUserName(uid, cache, data);
+      list.add(_mapFromFirestore(doc, userName));
+    }
+    return list;
   }
 
   /// GET pemasukan by ID
@@ -24,7 +58,10 @@ class PemasukanService {
     if (!doc.exists) {
       throw Exception('Data Pemasukan tidak ditemukan.');
     }
-    return _mapFromFirestore(doc);
+    final data = doc.data()!;
+    final uid = data['created_by']?.toString();
+    final userName = await _resolveUserName(uid, null, data);
+    return _mapFromFirestore(doc, userName);
   }
 
   /// POST /create a new pemasukan record
@@ -34,10 +71,11 @@ class PemasukanService {
       throw Exception('Pengguna tidak terautentikasi.');
     }
 
-    final data = _mapToFirestore(pemasukan, uid);
+    final userName = await _resolveUserName(uid, null, {});
+    final data = _mapToFirestore(pemasukan, uid, userName);
     final docRef = await _ref.add(data);
     final doc = await docRef.get();
-    return _mapFromFirestore(doc);
+    return _mapFromFirestore(doc, userName);
   }
 
   /// PUT /update a pemasukan record
@@ -55,14 +93,15 @@ class PemasukanService {
 
     // Avoid updating created_by to satisfy rules
     final originalCreatedBy = existingDoc.data()?['created_by'] ?? uid;
+    final originalCreatedByName = await _resolveUserName(originalCreatedBy, null, existingDoc.data()!);
 
-    final data = _mapToFirestore(pemasukan, originalCreatedBy);
+    final data = _mapToFirestore(pemasukan, originalCreatedBy, originalCreatedByName);
     data.remove('created_at'); // Do not overwrite created_at on update
     data['updated_at'] = FieldValue.serverTimestamp();
 
     await _ref.doc(id).update(data);
     final updatedDoc = await _ref.doc(id).get();
-    return _mapFromFirestore(updatedDoc);
+    return _mapFromFirestore(updatedDoc, originalCreatedByName);
   }
 
   /// DELETE a pemasukan record by ID
@@ -71,7 +110,7 @@ class PemasukanService {
   }
 
   /// Helper to convert PemasukanModel to Firestore map
-  Map<String, dynamic> _mapToFirestore(PemasukanModel model, String uid) {
+  Map<String, dynamic> _mapToFirestore(PemasukanModel model, String uid, String userName) {
     DateTime parsedDate;
     try {
       parsedDate = DateTime.parse(model.tanggal);
@@ -92,14 +131,16 @@ class PemasukanService {
       'setoran_aktual': model.setoranAktual.toInt(),
       'saldo_sistem': model.saldoSistem.toInt(),
       'selisih': model.selisih.toInt(),
+      'catatan': model.catatan ?? '',
       'created_by': uid,
+      'created_by_name': userName,
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
     };
   }
 
   /// Helper to map Firestore Document to PemasukanModel
-  PemasukanModel _mapFromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  PemasukanModel _mapFromFirestore(DocumentSnapshot<Map<String, dynamic>> doc, String userName) {
     final data = doc.data();
     if (data == null) {
       throw Exception('Data kosong.');
@@ -127,7 +168,8 @@ class PemasukanService {
       setoranAktual: (data['setoran_aktual'] as num?)?.toDouble() ?? 0.0,
       saldoSistem: (data['saldo_sistem'] as num?)?.toDouble() ?? 0.0,
       selisih: (data['selisih'] as num?)?.toDouble() ?? 0.0,
-      createdBy: data['created_by'],
+      catatan: data['catatan']?.toString() ?? '',
+      createdBy: userName,
       createdAt: (data['created_at'] as Timestamp?)?.toDate().toIso8601String(),
       updatedAt: (data['updated_at'] as Timestamp?)?.toDate().toIso8601String(),
     );

@@ -12,6 +12,7 @@ class PemasukanModel {
   final double setoranAktual;
   final double saldoSistem;
   final double selisih;
+  final String? catatan;
   final dynamic createdBy;
   final String? createdAt;
   final String? updatedAt;
@@ -30,6 +31,7 @@ class PemasukanModel {
     required this.setoranAktual,
     required this.saldoSistem,
     required this.selisih,
+    this.catatan,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -50,6 +52,7 @@ class PemasukanModel {
       setoranAktual: double.tryParse(json['setoran_aktual']?.toString() ?? json['setoranAktual']?.toString() ?? '0') ?? 0.0,
       saldoSistem: double.tryParse(json['saldo_sistem']?.toString() ?? json['saldoSistem']?.toString() ?? '0') ?? 0.0,
       selisih: double.tryParse(json['selisih']?.toString() ?? json['selisih']?.toString() ?? '0') ?? 0.0,
+      catatan: json['catatan']?.toString(),
       createdBy: json['created_by'] ?? json['createdBy'],
       createdAt: json['created_at'] ?? json['createdAt'],
       updatedAt: json['updated_at'] ?? json['updatedAt'],
@@ -69,6 +72,7 @@ class PemasukanModel {
         'setoran_aktual': setoranAktual,
         'saldo_sistem': saldoSistem,
         'selisih': selisih,
+        'catatan': catatan,
       };
 
   PemasukanModel copyWith({
@@ -85,6 +89,7 @@ class PemasukanModel {
     double? setoranAktual,
     double? saldoSistem,
     double? selisih,
+    String? catatan,
     dynamic createdBy,
     String? createdAt,
     String? updatedAt,
@@ -103,6 +108,7 @@ class PemasukanModel {
       setoranAktual: setoranAktual ?? this.setoranAktual,
       saldoSistem: saldoSistem ?? this.saldoSistem,
       selisih: selisih ?? this.selisih,
+      catatan: catatan ?? this.catatan,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

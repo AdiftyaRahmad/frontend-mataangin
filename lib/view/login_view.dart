@@ -128,7 +128,7 @@ class _LoginViewState extends State<LoginView>
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(32),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                               color: Colors.white.withValues(alpha: 0.12),
                               width: 1.5),
@@ -190,7 +190,7 @@ class _LoginViewState extends State<LoginView>
                                     backgroundColor: const Color(0xFF1598A3),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18)),
+                                        borderRadius: BorderRadius.circular(12)),
                                     elevation: 0,
                                   ),
                                   child: vm.isLoading
@@ -247,11 +247,11 @@ class _LoginViewState extends State<LoginView>
         filled: true,
         fillColor: const Color(0xFF155359),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
               color: Color(0xFFF5B914), width: 1.5),
         ),

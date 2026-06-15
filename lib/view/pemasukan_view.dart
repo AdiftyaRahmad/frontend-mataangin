@@ -199,6 +199,7 @@ class PemasukanView extends StatelessWidget {
         text: item != null ? _formatRibuan(item.qris.toStringAsFixed(0)) : '');
     final setoranAktualCtrl = TextEditingController(
         text: item != null ? _formatRibuan(item.setoranAktual.toStringAsFixed(0)) : '');
+    final catatanCtrl = TextEditingController(text: item?.catatan ?? '');
     final formKey = GlobalKey<FormState>();
 
     String getHariIndo(String dateStr) {
@@ -437,6 +438,14 @@ class PemasukanView extends StatelessWidget {
                               onChanged: (_) => setModalState(() {}),
                               inputFormatters: [ThousandsSeparatorInputFormatter()],
                             ),
+                            const SizedBox(height: 14),
+                            _labeledFormField(
+                              label: 'Catatan Selisih',
+                              ctrl: catatanCtrl,
+                              keyboardType: TextInputType.multiline,
+                              maxLines: 3,
+                              onChanged: (_) => setModalState(() {}),
+                            ),
                             const SizedBox(height: 24),
                             isLoadingDaily
                                 ? const Center(
@@ -603,6 +612,7 @@ class PemasukanView extends StatelessWidget {
                                       setoranAktual: double.tryParse(setoranAktualCtrl.text.replaceAll('.', '')) ?? 0,
                                       saldoSistem: getSaldoSistem(),
                                       selisih: getSelisih(),
+                                      catatan: catatanCtrl.text,
                                     );
                                     bool success;
                                     if (item == null) {
@@ -716,6 +726,7 @@ Widget _labeledFormField({
   String? Function(String?)? validator,
   void Function(String)? onChanged,
   List<TextInputFormatter>? inputFormatters,
+  int maxLines = 1,
 }) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -733,6 +744,7 @@ Widget _labeledFormField({
       TextFormField(
         controller: ctrl,
         keyboardType: keyboardType,
+        maxLines: maxLines,
         style: const TextStyle(
           color: Color(0xFF1E1E1E),
           fontSize: 15,
@@ -942,6 +954,29 @@ class _PemasukanCardState extends State<_PemasukanCard> {
               ),
               _rincianRow('Setor Aktual', widget.fmt.format(widget.item.setoranAktual)),
               _rincianRow('Selisih', widget.fmt.format(selisih)),
+              if (widget.item.catatan != null && widget.item.catatan!.trim().isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(color: Colors.white10, height: 1),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Catatan Selisih:',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.item.catatan!,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ],
           ],
         ),

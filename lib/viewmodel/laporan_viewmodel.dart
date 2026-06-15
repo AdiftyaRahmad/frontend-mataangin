@@ -99,7 +99,7 @@ class LaporanViewModel extends ChangeNotifier {
       final bytes = await _repository.exportPdfBytes(laporanToExport, periode: periode);
       final now = DateTime.now();
       final fileName = 'laporan_mata_angin_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.pdf';
-      saveFile(bytes, fileName, 'application/pdf');
+      await saveFile(bytes, fileName, 'application/pdf');
       _exportState = ViewState.success;
       notifyListeners();
       return true;
