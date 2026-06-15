@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/pemasukan_model.dart';
 import '../viewmodel/pemasukan_viewmodel.dart';
+import '../viewmodel/pengeluaran_viewmodel.dart';
 import '../viewmodel/dashboard_viewmodel.dart';
 import '../core/widgets/admin_only_widget.dart';
 
@@ -196,12 +197,8 @@ class PemasukanView extends StatelessWidget {
         text: item != null ? _formatRibuan(item.transfer.toStringAsFixed(0)) : '');
     final qrisCtrl = TextEditingController(
         text: item != null ? _formatRibuan(item.qris.toStringAsFixed(0)) : '');
-    final dendaCtrl = TextEditingController(
-        text: item != null ? _formatRibuan(item.denda.toStringAsFixed(0)) : '');
-    final kerusakanCtrl = TextEditingController(
-        text: item != null ? _formatRibuan(item.kerusakan.toStringAsFixed(0)) : '');
-    final dpCtrl = TextEditingController(
-        text: item != null ? _formatRibuan(item.dp.toStringAsFixed(0)) : '');
+    final setoranAktualCtrl = TextEditingController(
+        text: item != null ? _formatRibuan(item.setoranAktual.toStringAsFixed(0)) : '');
     final formKey = GlobalKey<FormState>();
 
     String getHariIndo(String dateStr) {
@@ -229,20 +226,59 @@ class PemasukanView extends StatelessWidget {
 
     String currentHari = getHariIndo(tanggalCtrl.text);
 
+    // Dynamic calculations from database
+    double totalPengeluaran = 0.0;
+    double otherPemasukan = 0.0;
+    bool isLoadingDaily = false;
+    bool isFirstLoad = true;
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetCtx) => StatefulBuilder(
         builder: (context, setModalState) {
+          Future<void> fetchDaily(String dateStr) async {
+            setModalState(() {
+              isLoadingDaily = true;
+            });
+            try {
+              final summary = await sheetCtx
+                  .read<PemasukanViewModel>()
+                  .getDailySummary(dateStr, excludeId: item?.id);
+              setModalState(() {
+                totalPengeluaran = summary['totalPengeluaran'] ?? 0.0;
+                otherPemasukan = summary['otherPemasukan'] ?? 0.0;
+                isLoadingDaily = false;
+              });
+            } catch (_) {
+              setModalState(() {
+                isLoadingDaily = false;
+              });
+            }
+          }
+
+          if (isFirstLoad) {
+            isFirstLoad = false;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              fetchDaily(tanggalCtrl.text);
+            });
+          }
+
           double getSum() {
             final c = double.tryParse(cashCtrl.text.replaceAll('.', '')) ?? 0;
             final t = double.tryParse(transferCtrl.text.replaceAll('.', '')) ?? 0;
             final q = double.tryParse(qrisCtrl.text.replaceAll('.', '')) ?? 0;
-            final d = double.tryParse(dendaCtrl.text.replaceAll('.', '')) ?? 0;
-            final k = double.tryParse(kerusakanCtrl.text.replaceAll('.', '')) ?? 0;
-            final dp = double.tryParse(dpCtrl.text.replaceAll('.', '')) ?? 0;
-            return c + t + q + d + k + dp;
+            return c + t + q;
+          }
+
+          double getSaldoSistem() {
+            return getSum() + otherPemasukan - totalPengeluaran;
+          }
+
+          double getSelisih() {
+            final sa = double.tryParse(setoranAktualCtrl.text.replaceAll('.', '')) ?? 0;
+            return sa - getSaldoSistem();
           }
 
           final fmtCur = NumberFormat.currency(
@@ -312,6 +348,7 @@ class PemasukanView extends StatelessWidget {
                                           tanggalCtrl.text = newDateStr;
                                           currentHari = getHariIndo(newDateStr);
                                         });
+                                        fetchDaily(newDateStr);
                                       }
                                     },
                                     child: Container(
@@ -392,80 +429,148 @@ class PemasukanView extends StatelessWidget {
                               onChanged: (_) => setModalState(() {}),
                               inputFormatters: [ThousandsSeparatorInputFormatter()],
                             ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              'Penerimaan Lainnya',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _labeledFormField(
-                                    label: 'Denda',
-                                    ctrl: dendaCtrl,
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (_) => setModalState(() {}),
-                                    inputFormatters: [ThousandsSeparatorInputFormatter()],
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: _labeledFormField(
-                                    label: 'Kerusakan',
-                                    ctrl: kerusakanCtrl,
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (_) => setModalState(() {}),
-                                    inputFormatters: [ThousandsSeparatorInputFormatter()],
-                                  ),
-                                ),
-                              ],
-                            ),
                             const SizedBox(height: 14),
                             _labeledFormField(
-                              label: 'DP (Down Payment)',
-                              ctrl: dpCtrl,
+                              label: 'Setoran Aktual',
+                              ctrl: setoranAktualCtrl,
                               keyboardType: TextInputType.number,
                               onChanged: (_) => setModalState(() {}),
                               inputFormatters: [ThousandsSeparatorInputFormatter()],
                             ),
                             const SizedBox(height: 24),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF252A34),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: const Color(0xFF383F51),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Total Pemasukan',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
+                            isLoadingDaily
+                                ? const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: CircularProgressIndicator(color: Color(0xFF1598A3)),
+                                    ),
+                                  )
+                                : Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF252A34),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFF383F51),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text(
+                                              'Total Pemasukan',
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              fmtCur.format(getSum()),
+                                              style: const TextStyle(
+                                                color: Color(0xFF1598A3),
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text(
+                                              'Pengeluaran Hari Ini',
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              fmtCur.format(totalPengeluaran),
+                                              style: const TextStyle(
+                                                color: Color(0xFFEF4444),
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (otherPemasukan > 0) ...[
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text(
+                                                'Pemasukan Lain Hari Ini',
+                                                style: TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              Text(
+                                                fmtCur.format(otherPemasukan),
+                                                style: const TextStyle(
+                                                  color: Color(0xFF1598A3),
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                        const Divider(color: Colors.white12, height: 20),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text(
+                                              'Saldo Sistem',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              fmtCur.format(getSaldoSistem()),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text(
+                                              'Selisih',
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              (getSelisih() >= 0 ? '+' : '') + fmtCur.format(getSelisih()),
+                                              style: TextStyle(
+                                                color: getSelisih() >= 0 ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Text(
-                                    fmtCur.format(getSum()),
-                                    style: const TextStyle(
-                                      color: Color(0xFF1598A3),
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                             const SizedBox(height: 24),
                           ],
                         ),
@@ -479,7 +584,7 @@ class PemasukanView extends StatelessWidget {
                           width: double.infinity,
                           height: 54,
                           child: ElevatedButton(
-                            onPressed: vm.isMutating
+                            onPressed: vm.isMutating || isLoadingDaily
                                 ? null
                                : () async {
                                     if (!formKey.currentState!.validate()) return;
@@ -491,11 +596,13 @@ class PemasukanView extends StatelessWidget {
                                       transfer:
                                           double.tryParse(transferCtrl.text.replaceAll('.', '')) ?? 0,
                                       qris: double.tryParse(qrisCtrl.text.replaceAll('.', '')) ?? 0,
-                                      denda: double.tryParse(dendaCtrl.text.replaceAll('.', '')) ?? 0,
-                                      kerusakan:
-                                          double.tryParse(kerusakanCtrl.text.replaceAll('.', '')) ?? 0,
-                                      dp: double.tryParse(dpCtrl.text.replaceAll('.', '')) ?? 0,
+                                      denda: 0.0,
+                                      kerusakan: 0.0,
+                                      dp: 0.0,
                                       totalPemasukan: getSum(),
+                                      setoranAktual: double.tryParse(setoranAktualCtrl.text.replaceAll('.', '')) ?? 0,
+                                      saldoSistem: getSaldoSistem(),
+                                      selisih: getSelisih(),
                                     );
                                     bool success;
                                     if (item == null) {
@@ -654,7 +761,7 @@ Widget _labeledFormField({
   );
 }
 
-class _PemasukanCard extends StatelessWidget {
+class _PemasukanCard extends StatefulWidget {
   final PemasukanModel item;
   final NumberFormat fmt;
   final VoidCallback onEdit;
@@ -668,7 +775,33 @@ class _PemasukanCard extends StatelessWidget {
   });
 
   @override
+  State<_PemasukanCard> createState() => _PemasukanCardState();
+}
+
+class _PemasukanCardState extends State<_PemasukanCard> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final pengeluaranVm = context.watch<PengeluaranViewModel>();
+    final pemasukanVm = context.watch<PemasukanViewModel>();
+
+    // Hitung total pengeluaran hari ini secara real-time dari list pengeluaran yang di-load
+    final totalPengeluaran = pengeluaranVm.list
+        .where((e) => e.tanggal == widget.item.tanggal)
+        .fold(0.0, (sum, e) => sum + e.nominal);
+
+    // Hitung pemasukan lain pada hari yang sama (selain dokumen pemasukan ini) secara real-time
+    final otherPemasukan = pemasukanVm.list
+        .where((e) => e.tanggal == widget.item.tanggal && e.id != widget.item.id)
+        .fold(0.0, (sum, e) => sum + e.totalPemasukan);
+
+    // Saldo sistem real-time = total pemasukan record ini + pemasukan lain - total pengeluaran
+    final saldoSistem = widget.item.totalPemasukan + otherPemasukan - totalPengeluaran;
+
+    // Selisih real-time = setor aktual - saldo sistem
+    final selisih = widget.item.setoranAktual - saldoSistem;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       decoration: BoxDecoration(
@@ -684,10 +817,10 @@ class _PemasukanCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: const Color(0xFF0D2529), // Dark teal background
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -701,68 +834,51 @@ class _PemasukanCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _formatDisplayDate(item.hari, item.tanggal),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Dibuat oleh: ${item.createdBy ?? '-'}',
-                        style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      fmt.format(item.totalPemasukan),
-                      style: const TextStyle(
-                        color: Color(0xFF1598A3),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        InkWell(
-                          onTap: onEdit,
-                          child: const Padding(
-                            padding: EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.edit_outlined,
-                              size: 20,
-                              color: Colors.white60,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _formatDisplayDate(widget.item.hari, widget.item.tanggal),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        DeleteOnlyWidget(
-                          child: InkWell(
-                            onTap: onDelete,
-                            child: const Padding(
-                              padding: EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.delete_outline_rounded,
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: widget.onEdit,
+                            child: const Icon(
+                              Icons.edit_outlined,
+                              size: 20,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          DeleteOnlyWidget(
+                            child: InkWell(
+                              onTap: widget.onDelete,
+                              child: const Icon(
+                                                                Icons.delete_outline_rounded,
                                 size: 20,
                                 color: Color(0xFFEF4444),
                               ),
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Dibuat oleh: ${widget.item.createdBy ?? '-'}',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -776,19 +892,57 @@ class _PemasukanCard extends StatelessWidget {
             // ── Breakdown grid ─────────────────────────────────────────────
             Row(
               children: [
-                _breakdownItem('Cash', fmt.format(item.cash)),
-                _breakdownItem('Transfer', fmt.format(item.transfer)),
-                _breakdownItem('QRIS', fmt.format(item.qris)),
+                _breakdownItem('Cash', widget.fmt.format(widget.item.cash)),
+                _breakdownItem('Transfer', widget.fmt.format(widget.item.transfer)),
+                _breakdownItem('QRIS', widget.fmt.format(widget.item.qris)),
               ],
             ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _breakdownItem('Denda', fmt.format(item.denda)),
-                _breakdownItem('Kerusakan', fmt.format(item.kerusakan)),
-                _breakdownItem('DP', fmt.format(item.dp)),
-              ],
+            
+            const SizedBox(height: 20),
+            
+            // ── Expandable Trigger ──────────────────────────────────────────
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Rincian Keuangan',
+                    style: TextStyle(
+                      color: Color(0xFF1598A3),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Icon(
+                    _isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: const Color(0xFF1598A3),
+                    size: 24,
+                  ),
+                ],
+              ),
             ),
+
+            // ── Expanded Content ────────────────────────────────────────────
+            if (_isExpanded) ...[
+              const SizedBox(height: 16),
+              _rincianRow('Total Pemasukan', widget.fmt.format(widget.item.totalPemasukan), valueColor: const Color(0xFF1598A3)),
+              _rincianRow('Total Pengeluaran', widget.fmt.format(totalPengeluaran), valueColor: const Color(0xFFEF4444)),
+              _rincianRow('Saldo Sistem', widget.fmt.format(saldoSistem), valueColor: const Color(0xFF1598A3)),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Divider(color: Colors.white10, height: 1),
+              ),
+              _rincianRow('Setor Aktual', widget.fmt.format(widget.item.setoranAktual)),
+              _rincianRow('Selisih', widget.fmt.format(selisih)),
+            ],
           ],
         ),
       ),
@@ -809,15 +963,41 @@ class _PemasukanCard extends StatelessWidget {
             label,
             style: const TextStyle(color: Colors.white38, fontSize: 12),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
             overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _rincianRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor ?? Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

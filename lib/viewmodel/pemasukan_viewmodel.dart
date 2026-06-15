@@ -97,4 +97,7 @@ class PemasukanViewModel extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<Map<String, double>> getDailySummary(String dateStr, {String? excludeId}) =>
+      _repository.getDailySummary(dateStr, excludeId: excludeId);
 }

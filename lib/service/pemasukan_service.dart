@@ -89,6 +89,9 @@ class PemasukanService {
       'kerusakan': model.kerusakan.toInt(),
       'dp': model.dp.toInt(),
       'total_pemasukan': model.totalPemasukan.toInt(),
+      'setoran_aktual': model.setoranAktual.toInt(),
+      'saldo_sistem': model.saldoSistem.toInt(),
+      'selisih': model.selisih.toInt(),
       'created_by': uid,
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
@@ -121,9 +124,46 @@ class PemasukanService {
       kerusakan: (data['kerusakan'] as num?)?.toDouble() ?? 0.0,
       dp: (data['dp'] as num?)?.toDouble() ?? 0.0,
       totalPemasukan: (data['total_pemasukan'] as num?)?.toDouble() ?? 0.0,
+      setoranAktual: (data['setoran_aktual'] as num?)?.toDouble() ?? 0.0,
+      saldoSistem: (data['saldo_sistem'] as num?)?.toDouble() ?? 0.0,
+      selisih: (data['selisih'] as num?)?.toDouble() ?? 0.0,
       createdBy: data['created_by'],
       createdAt: (data['created_at'] as Timestamp?)?.toDate().toIso8601String(),
       updatedAt: (data['updated_at'] as Timestamp?)?.toDate().toIso8601String(),
     );
+  }
+
+  /// GET daily summary of total pengeluaran and other pemasukan on a date
+  Future<Map<String, double>> getDailySummary(String dateStr, {String? excludeId}) async {
+    final date = DateTime.parse(dateStr);
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+    final pengeluaranSnap = await _firestore
+        .collection('pengeluaran')
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .get();
+
+    double totalPengeluaran = 0.0;
+    for (var doc in pengeluaranSnap.docs) {
+      totalPengeluaran += (doc.data()['nominal'] as num?)?.toDouble() ?? 0.0;
+    }
+
+    final pemasukanSnap = await _ref
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .get();
+
+    double otherPemasukan = 0.0;
+    for (var doc in pemasukanSnap.docs) {
+      if (excludeId != null && doc.id == excludeId) continue;
+      otherPemasukan += (doc.data()['total_pemasukan'] as num?)?.toDouble() ?? 0.0;
+    }
+
+    return {
+      'totalPengeluaran': totalPengeluaran,
+      'otherPemasukan': otherPemasukan,
+    };
   }
 }

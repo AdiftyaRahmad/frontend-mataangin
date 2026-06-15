@@ -7,6 +7,7 @@ abstract class IPemasukanRepository {
   Future<PemasukanModel> create(PemasukanModel pemasukan);
   Future<PemasukanModel> update(String id, PemasukanModel pemasukan);
   Future<void> delete(String id);
+  Future<Map<String, double>> getDailySummary(String dateStr, {String? excludeId});
 }
 
 class PemasukanRepository implements IPemasukanRepository {
@@ -31,4 +32,8 @@ class PemasukanRepository implements IPemasukanRepository {
 
   @override
   Future<void> delete(String id) => _service.delete(id);
+
+  @override
+  Future<Map<String, double>> getDailySummary(String dateStr, {String? excludeId}) =>
+      _service.getDailySummary(dateStr, excludeId: excludeId);
 }

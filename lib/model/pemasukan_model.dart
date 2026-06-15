@@ -9,6 +9,9 @@ class PemasukanModel {
   final double kerusakan;
   final double dp;
   final double totalPemasukan;
+  final double setoranAktual;
+  final double saldoSistem;
+  final double selisih;
   final dynamic createdBy;
   final String? createdAt;
   final String? updatedAt;
@@ -24,6 +27,9 @@ class PemasukanModel {
     required this.kerusakan,
     required this.dp,
     required this.totalPemasukan,
+    required this.setoranAktual,
+    required this.saldoSistem,
+    required this.selisih,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -41,6 +47,9 @@ class PemasukanModel {
       kerusakan: double.tryParse(json['kerusakan']?.toString() ?? '0') ?? 0.0,
       dp: double.tryParse(json['dp']?.toString() ?? '0') ?? 0.0,
       totalPemasukan: double.tryParse(json['total_pemasukan']?.toString() ?? json['totalPemasukan']?.toString() ?? '0') ?? 0.0,
+      setoranAktual: double.tryParse(json['setoran_aktual']?.toString() ?? json['setoranAktual']?.toString() ?? '0') ?? 0.0,
+      saldoSistem: double.tryParse(json['saldo_sistem']?.toString() ?? json['saldoSistem']?.toString() ?? '0') ?? 0.0,
+      selisih: double.tryParse(json['selisih']?.toString() ?? json['selisih']?.toString() ?? '0') ?? 0.0,
       createdBy: json['created_by'] ?? json['createdBy'],
       createdAt: json['created_at'] ?? json['createdAt'],
       updatedAt: json['updated_at'] ?? json['updatedAt'],
@@ -57,6 +66,9 @@ class PemasukanModel {
         'kerusakan': kerusakan,
         'dp': dp,
         'total_pemasukan': totalPemasukan,
+        'setoran_aktual': setoranAktual,
+        'saldo_sistem': saldoSistem,
+        'selisih': selisih,
       };
 
   PemasukanModel copyWith({
@@ -70,6 +82,9 @@ class PemasukanModel {
     double? kerusakan,
     double? dp,
     double? totalPemasukan,
+    double? setoranAktual,
+    double? saldoSistem,
+    double? selisih,
     dynamic createdBy,
     String? createdAt,
     String? updatedAt,
@@ -85,6 +100,9 @@ class PemasukanModel {
       kerusakan: kerusakan ?? this.kerusakan,
       dp: dp ?? this.dp,
       totalPemasukan: totalPemasukan ?? this.totalPemasukan,
+      setoranAktual: setoranAktual ?? this.setoranAktual,
+      saldoSistem: saldoSistem ?? this.saldoSistem,
+      selisih: selisih ?? this.selisih,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

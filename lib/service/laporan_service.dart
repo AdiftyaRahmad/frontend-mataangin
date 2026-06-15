@@ -34,12 +34,19 @@ class LaporanService {
       final data = doc.data();
       final amount = (data['total_pemasukan'] as num?)?.toDouble() ?? 0.0;
       totalPemasukan += amount;
+      final cashVal = data['cash'] ?? 0;
+      final tfVal = data['transfer_bca'] ?? 0;
+      final qrisVal = data['qris_dana'] ?? 0;
+      String ket = 'Cash: $cashVal, Transfer: $tfVal, QRIS: $qrisVal';
+      if (data['setoran_aktual'] != null) {
+        ket += ', Setoran: ${data['setoran_aktual']}, Selisih: ${data['selisih'] ?? 0}';
+      }
       transaksi.add(LaporanItem(
         judul: 'Pemasukan - ${data['hari'] ?? ''}',
         jumlah: amount,
         jenis: 'pemasukan',
         tanggal: tanggalStr,
-        keterangan: 'Cash: ${data['cash']}, Transfer: ${data['transfer_bca']}, QRIS: ${data['qris_dana']}',
+        keterangan: ket,
       ));
     }
 
@@ -99,12 +106,20 @@ class LaporanService {
           ? dateTimestamp.toDate().toIso8601String().split('T')[0]
           : '';
 
+      final cashVal = data['cash'] ?? 0;
+      final tfVal = data['transfer_bca'] ?? 0;
+      final qrisVal = data['qris_dana'] ?? 0;
+      String ket = 'Cash: $cashVal, Transfer: $tfVal, QRIS: $qrisVal';
+      if (data['setoran_aktual'] != null) {
+        ket += ', Setoran: ${data['setoran_aktual']}, Selisih: ${data['selisih'] ?? 0}';
+      }
+
       transaksi.add(LaporanItem(
         judul: 'Pemasukan - ${data['hari'] ?? ''}',
         jumlah: amount,
         jenis: 'pemasukan',
         tanggal: dateStr,
-        keterangan: 'Cash: ${data['cash']}, Transfer: ${data['transfer_bca']}, QRIS: ${data['qris_dana']}',
+        keterangan: ket,
       ));
     }
 
