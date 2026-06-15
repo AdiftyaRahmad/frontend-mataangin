@@ -262,18 +262,17 @@ class PengeluaranView extends StatelessWidget {
     }
 
     final categories = [
-      'Operasional',
-      'Gaji Karyawan',
-      'Inventaris / Alat',
-      'Sewa Tempat',
-      'Utilitas (Listrik/Air/Internet)',
-      'Bahan Baku / Stok',
-      'Lainnya',
+      'Gaji & Uang Makan',
+      'Operasional Toko',
+      'Perawatan & Service',
+      'Inventaris',
+      'Pemasaran & Penjualan',
+      'Pengeluaran Lainnya',
     ];
 
-    String selectedKategori = item?.kategori ?? 'Operasional';
+    String selectedKategori = item?.kategori ?? 'Gaji & Uang Makan';
     if (!categories.contains(selectedKategori)) {
-      selectedKategori = 'Operasional';
+      selectedKategori = 'Gaji & Uang Makan';
     }
 
     await showModalBottomSheet(

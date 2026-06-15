@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -14,15 +16,13 @@ import 'utang_piutang_view.dart';
 import 'laporan_view.dart';
 
 // ─── Color Palette ─────────────────────────────────────────────────────────────
-const _kBg         = Color(0xFF1598A3);
-const _kCard       = Color(0xFF1E1E1E);
-const _kTeal       = Color(0xFF1598A3);
-const _kTealDark   = Color(0xFF0D7A84);
-const _kTealDeep   = Color(0xFF0A5C64);
-const _kGreen      = Color(0xFF22C55E);
-const _kRed        = Color(0xFFEF4444);
-const _kTextPrim   = Colors.white;
-const _kTextSub    = Color(0xFF9CA3AF);
+const _kBg = Color(0xFF1598A3);
+const _kCard = Color(0xFF1E1E1E);
+const _kTeal = Color(0xFF1598A3);
+const _kGreen = Color(0xFF22C55E);
+const _kRed = Color(0xFFEF4444);
+const _kTextPrim = Colors.white;
+const _kTextSub = Color(0xFF9CA3AF);
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
@@ -78,11 +78,19 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      _NavItem(Icons.grid_view_rounded,        Icons.grid_view_rounded,        'Dashboard'),
-      _NavItem(Icons.trending_up_rounded,      Icons.trending_up_rounded,      'Pemasukan'),
-      _NavItem(Icons.trending_down_rounded,    Icons.trending_down_rounded,    'Pengeluaran'),
-      _NavItem(Icons.people_alt_outlined,      Icons.people_alt_rounded,       'Utang'),
-      _NavItem(Icons.bar_chart_rounded,        Icons.bar_chart_rounded,        'Laporan'),
+      _NavItem(Icons.grid_view_rounded, Icons.grid_view_rounded, 'Dashboard'),
+      _NavItem(
+        Icons.trending_up_rounded,
+        Icons.trending_up_rounded,
+        'Pemasukan',
+      ),
+      _NavItem(
+        Icons.trending_down_rounded,
+        Icons.trending_down_rounded,
+        'Pengeluaran',
+      ),
+      _NavItem(Icons.people_alt_outlined, Icons.people_alt_rounded, 'Utang'),
+      _NavItem(Icons.bar_chart_rounded, Icons.bar_chart_rounded, 'Laporan'),
     ];
 
     return Container(
@@ -90,9 +98,7 @@ class _BottomNav extends StatelessWidget {
         color: Color(0xFF1A1A1A),
         border: Border(top: BorderSide(color: Color(0xFF2A2A2A), width: 1)),
       ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).padding.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(items.length, (i) {
@@ -144,45 +150,47 @@ class _HomeTab extends StatelessWidget {
   const _HomeTab();
 
   @override
-Widget build(BuildContext context) {
-  final authVm = context.watch<AuthViewModel>();
-  final dashVm = context.watch<DashboardViewModel>();
-  final pemasukanVm = context.watch<PemasukanViewModel>();
-  final pengeluaranVm = context.watch<PengeluaranViewModel>();
+  Widget build(BuildContext context) {
+    final authVm = context.watch<AuthViewModel>();
+    final dashVm = context.watch<DashboardViewModel>();
+    final pemasukanVm = context.watch<PemasukanViewModel>();
+    final pengeluaranVm = context.watch<PengeluaranViewModel>();
 
-  final fmt = NumberFormat.currency(
-    locale: 'id_ID',
-    symbol: 'Rp ',
-    decimalDigits: 0,
-  );
+    final fmt = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
 
-  final List<_TxData> allTx = [
-    ...pemasukanVm.list.map((e) => _TxData(
+    final List<_TxData> allTx = [
+      ...pemasukanVm.list.map(
+        (e) => _TxData(
           judul: 'Pemasukan - ${e.hari}',
           jumlah: e.totalPemasukan,
           tanggal: e.tanggal,
           isIncome: true,
-        )),
-    ...pengeluaranVm.list.map((e) => _TxData(
+        ),
+      ),
+      ...pengeluaranVm.list.map(
+        (e) => _TxData(
           judul: e.namaBarang,
           jumlah: e.nominal,
           tanggal: e.tanggal,
           isIncome: false,
-        )),
-  ];
+        ),
+      ),
+    ];
 
-  allTx.sort((a, b) => (b.tanggal ?? '').compareTo(a.tanggal ?? ''));
+    allTx.sort((a, b) => (b.tanggal ?? '').compareTo(a.tanggal ?? ''));
 
-  final recentTx = allTx.take(5).toList();
+    final recentTx = allTx.take(5).toList();
 
     return Column(
       children: [
         // ── Teal Header ─────────────────────────────────────────────────────
         Container(
           width: double.infinity,
-          decoration: const BoxDecoration(
-            color: _kTeal,
-          ),
+          decoration: const BoxDecoration(color: _kTeal),
           padding: EdgeInsets.only(
             top: MediaQuery.of(context).padding.top + 16,
             left: 20,
@@ -219,8 +227,11 @@ Widget build(BuildContext context) {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.logout_rounded,
-                    color: Colors.white, size: 22),
+                icon: const Icon(
+                  Icons.logout_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
                 onPressed: () async {
                   await context.read<AuthViewModel>().logout();
                   if (context.mounted) {
@@ -261,10 +272,9 @@ Widget build(BuildContext context) {
                     fmt: fmt,
                   ),
                   const SizedBox(height: 16),
-                  _RingkasanKeuanganCard(
-                    saldo: dashVm.dashboard.saldo,
-                    pemasukan: dashVm.dashboard.totalPemasukan,
-                    pengeluaran: dashVm.dashboard.totalPengeluaran,
+                  _ExpenseBreakdownCard(
+                    pengeluaranList: pengeluaranVm.list,
+                    totalPengeluaran: dashVm.dashboard.totalPengeluaran,
                     fmt: fmt,
                   ),
                 ],
@@ -288,7 +298,9 @@ Widget build(BuildContext context) {
                       onPressed: () {},
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 2),
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -310,13 +322,15 @@ Widget build(BuildContext context) {
                 if (recentTx.isEmpty)
                   const _EmptyState(message: 'Belum ada transaksi')
                 else
-                  ...recentTx.map((tx) => _TransactionTile(
-                        judul: tx.judul,
-                        jumlah: tx.jumlah,
-                        tanggal: tx.tanggal,
-                        isIncome: tx.isIncome,
-                        fmt: fmt,
-                      )),
+                  ...recentTx.map(
+                    (tx) => _TransactionTile(
+                      judul: tx.judul,
+                      jumlah: tx.jumlah,
+                      tanggal: tx.tanggal,
+                      isIncome: tx.isIncome,
+                      fmt: fmt,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -347,16 +361,16 @@ class _SaldoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _kTealDark,
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFF044B52),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Total Saldo',
             style: TextStyle(
-              color: Colors.white70,
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -417,48 +431,49 @@ class _MiniStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: _kTealDeep,
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFF063A40).withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: accentColor, size: 13),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: accentColor, size: 14),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -615,15 +630,15 @@ class _EmptyState extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
           children: [
-            Icon(Icons.receipt_long_outlined,
-                size: 52, color: Colors.white.withValues(alpha: 0.2)),
+            Icon(
+              Icons.receipt_long_outlined,
+              size: 52,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
             const SizedBox(height: 12),
             Text(
               message,
-              style: const TextStyle(
-                color: _kTextSub,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: _kTextSub, fontSize: 14),
             ),
           ],
         ),
@@ -632,280 +647,268 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ─── Ringkasan Keuangan Card ──────────────────────────────────────────────────
+// ─── Expense Breakdown Card ──────────────────────────────────────────────────
 
-class _RingkasanKeuanganCard extends StatelessWidget {
-  final double saldo;
-  final double pemasukan;
-  final double pengeluaran;
+class _ExpenseBreakdownCard extends StatelessWidget {
+  final List<dynamic> pengeluaranList; // List<PengeluaranModel>
+  final double totalPengeluaran;
   final NumberFormat fmt;
 
-  const _RingkasanKeuanganCard({
-    required this.saldo,
-    required this.pemasukan,
-    required this.pengeluaran,
+  const _ExpenseBreakdownCard({
+    required this.pengeluaranList,
+    required this.totalPengeluaran,
     required this.fmt,
   });
 
+  String _mapCategory(String? raw) {
+    final cat = raw?.toLowerCase() ?? '';
+    if (cat.contains('gaji')) {
+      return 'Gaji & Uang Makan';
+    } else if (cat.contains('operasional') || cat.contains('sewa') || cat.contains('utilitas')) {
+      return 'Operasional Toko';
+    } else if (cat.contains('service') || cat.contains('perawatan')) {
+      return 'Perawatan & Service';
+    } else if (cat.contains('inventaris') || cat.contains('alat')) {
+      return 'Inventaris';
+    } else if (cat.contains('pemasaran') || cat.contains('penjualan') || cat.contains('bahan') || cat.contains('stok')) {
+      return 'Pemasaran & Penjualan';
+    } else {
+      return 'Pengeluaran Lainnya';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Dynamic savings rate / net margin
-    double pct = 0.0;
-    if (pemasukan > 0) {
-      pct = (saldo / pemasukan) * 100;
-    } else if (pengeluaran > 0) {
-      pct = -100.0;
+    // Categories template
+    final categoriesData = {
+      'Gaji & Uang Makan': {'color': const Color(0xFF14B8A6), 'amount': 0.0},
+      'Operasional Toko': {'color': const Color(0xFF3B82F6), 'amount': 0.0},
+      'Perawatan & Service': {'color': const Color(0xFF6366F1), 'amount': 0.0},
+      'Inventaris': {'color': const Color(0xFFEC4899), 'amount': 0.0},
+      'Pemasaran & Penjualan': {'color': const Color(0xFFF59E0B), 'amount': 0.0},
+      'Pengeluaran Lainnya': {'color': const Color(0xFFEAB308), 'amount': 0.0},
+    };
+
+    // Calculate dynamic values
+    double calculatedTotal = 0.0;
+    for (final item in pengeluaranList) {
+      final mapped = _mapCategory(item.kategori);
+      if (categoriesData.containsKey(mapped)) {
+        categoriesData[mapped]!['amount'] = (categoriesData[mapped]!['amount'] as double) + item.nominal;
+        calculatedTotal += item.nominal;
+      }
     }
 
-    final total = pemasukan + pengeluaran;
-    final double pemasukanPct = total > 0 ? (pemasukan / total) : 0.0;
-    final double pengeluaranPct = total > 0 ? (pengeluaran / total) : 0.0;
+    final List<_PieSliceData> slices = [];
+    final bool useMock = calculatedTotal == 0.0;
+
+    categoriesData.forEach((label, data) {
+      final double amount = useMock ? 100000.0 : (data['amount'] as double);
+      final double totalForPct = useMock ? 600000.0 : calculatedTotal;
+      final double percentage = totalForPct > 0 ? (amount / totalForPct) : 0.0;
+      slices.add(_PieSliceData(
+        label: label,
+        value: useMock ? 100000.0 : (data['amount'] as double),
+        percentage: percentage,
+        color: data['color'] as Color,
+      ));
+    });
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
-        color: _kCard,
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Ringkasan Keuangan',
-            style: TextStyle(
-              color: _kTextSub,
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            fmt.format(saldo),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildTrendPill(pct),
-          const SizedBox(height: 16),
           Center(
             child: SizedBox(
-              width: 180,
-              height: 180,
-              child: _DonutChart(
-                pemasukan: pemasukan,
-                pengeluaran: pengeluaran,
+              width: 340,
+              height: 280,
+              child: CustomPaint(
+                painter: _PieChartWithLinesPainter(slices: slices),
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          _LegendItem(
-            label: 'Pemasukan',
-            amount: pemasukan,
-            percentage: pemasukanPct,
-            color: _kGreen,
-            fmt: fmt,
-          ),
-          const SizedBox(height: 12),
-          _LegendItem(
-            label: 'Pengeluaran',
-            amount: pengeluaran,
-            percentage: pengeluaranPct,
-            color: _kRed,
-            fmt: fmt,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrendPill(double pct) {
-    final isPositive = pct >= 0;
-    final color = isPositive ? _kGreen : _kRed;
-    final icon = isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 14),
-          const SizedBox(width: 4),
-          Text(
-            '${pct.abs().toStringAsFixed(1)}%',
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          const SizedBox(height: 20),
+          // Categories list below the chart
+          ...slices.map((slice) {
+            final double displayAmount = slice.value;
+            final int displayPct = (slice.percentage * 100).round();
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 22,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: slice.color,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '$displayPct%',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      slice.label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    fmt.format(displayAmount),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
   }
 }
 
-// ─── Donut Chart ──────────────────────────────────────────────────────────────
+class _PieSliceData {
+  final String label;
+  final double value;
+  final double percentage;
+  final Color color;
 
-class _DonutChart extends StatelessWidget {
-  final double pemasukan;
-  final double pengeluaran;
-
-  const _DonutChart({
-    required this.pemasukan,
-    required this.pengeluaran,
+  _PieSliceData({
+    required this.label,
+    required this.value,
+    required this.percentage,
+    required this.color,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    final total = pemasukan + pengeluaran;
-    final double pemasukanPct = total > 0 ? (pemasukan / total) : 0.0;
-    final double pengeluaranPct = total > 0 ? (pengeluaran / total) : 0.0;
-    final isZero = pemasukan == 0 && pengeluaran == 0;
-
-    return CustomPaint(
-      painter: _DonutChartPainter(
-        pemasukanPct: isZero ? 0.0 : pemasukanPct,
-        pengeluaranPct: isZero ? 0.0 : pengeluaranPct,
-        isZero: isZero,
-      ),
-    );
-  }
 }
 
-class _DonutChartPainter extends CustomPainter {
-  final double pemasukanPct;
-  final double pengeluaranPct;
-  final bool isZero;
+class _PieChartWithLinesPainter extends CustomPainter {
+  final List<_PieSliceData> slices;
 
-  _DonutChartPainter({
-    required this.pemasukanPct,
-    required this.pengeluaranPct,
-    required this.isZero,
-  });
+  _PieChartWithLinesPainter({required this.slices});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final strokeWidth = 24.0;
-    final radius = (size.width - strokeWidth) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
+    final radius = 100.0;
 
-    final paintBg = Paint()
-      ..color = const Color(0xFF2E2E2E)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
+    // First draw the slices
+    double startAngle = -3.141592653589793 / 2; // start from top
 
-    if (isZero) {
-      canvas.drawCircle(center, radius, paintBg);
-      return;
+    for (final slice in slices) {
+      final sweepAngle = slice.percentage * 2 * 3.141592653589793;
+      if (sweepAngle <= 0) continue;
+
+      final paint = Paint()
+        ..color = slice.color
+        ..style = PaintingStyle.fill;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        true,
+        paint,
+      );
+
+      // Slices divider border
+      final borderPaint = Paint()
+        ..color = const Color(0xFF121212)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        true,
+        borderPaint,
+      );
+
+      startAngle += sweepAngle;
     }
 
-    final paintPemasukan = Paint()
-      ..color = _kGreen
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
+    // Second pass: Draw the callout lines & labels
+    startAngle = -3.141592653589793 / 2;
 
-    final paintPengeluaran = Paint()
-      ..color = _kRed
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
+    for (final slice in slices) {
+      final sweepAngle = slice.percentage * 2 * 3.141592653589793;
+      if (sweepAngle <= 0) continue;
 
-    // Start drawing from the top (-pi/2)
-    double startAngle = -3.141592653589793 / 2;
+      final middleAngle = startAngle + sweepAngle / 2;
+      final dx = cos(middleAngle);
+      final dy = sin(middleAngle);
 
-    // Draw Pemasukan (Green)
-    final sweepPemasukan = 2 * 3.141592653589793 * pemasukanPct;
-    canvas.drawArc(rect, startAngle, sweepPemasukan, false, paintPemasukan);
+      // Start line at the edge of the slice
+      final startPoint = center + Offset(dx * radius, dy * radius);
 
-    // Draw Pengeluaran (Red)
-    final sweepPengeluaran = 2 * 3.141592653589793 * pengeluaranPct;
-    canvas.drawArc(rect, startAngle + sweepPemasukan, sweepPengeluaran, false, paintPengeluaran);
+      // Line angles to bend callouts elegantly
+      final inflectionPoint = center + Offset(dx * (radius + 18), dy * (radius + 18));
+      
+      final isRightSide = dx > 0;
+      final endPoint = Offset(
+        inflectionPoint.dx + (isRightSide ? 14 : -14),
+        inflectionPoint.dy,
+      );
+
+      // Draw the lines
+      final linePaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+
+      canvas.drawLine(startPoint, inflectionPoint, linePaint);
+      canvas.drawLine(inflectionPoint, endPoint, linePaint);
+
+      // Draw text at the end of the line
+      final textSpan = TextSpan(
+        text: '${slice.label.replaceAll(' & ', ' &\n').replaceAll(' / ', ' /\n')}\n${(slice.percentage * 100).toStringAsFixed(0)}%',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 8,
+          fontWeight: FontWeight.w500,
+          height: 1.1,
+        ),
+      );
+
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: ui.TextDirection.ltr,
+        textAlign: isRightSide ? TextAlign.left : TextAlign.right,
+      );
+      textPainter.layout();
+
+      // Position text
+      final textX = isRightSide ? endPoint.dx + 4 : endPoint.dx - textPainter.width - 4;
+      final textY = endPoint.dy - textPainter.height / 2;
+      textPainter.paint(canvas, Offset(textX, textY));
+
+      startAngle += sweepAngle;
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
-    return oldDelegate.pemasukanPct != pemasukanPct ||
-        oldDelegate.pengeluaranPct != pengeluaranPct ||
-        oldDelegate.isZero != isZero;
-  }
-}
-
-// ─── Legend Item ──────────────────────────────────────────────────────────────
-
-class _LegendItem extends StatelessWidget {
-  final String label;
-  final double amount;
-  final double percentage;
-  final Color color;
-  final NumberFormat fmt;
-
-  const _LegendItem({
-    required this.label,
-    required this.amount,
-    required this.percentage,
-    required this.color,
-    required this.fmt,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 4,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: _kTextPrim,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 4,
-          child: Text(
-            fmt.format(amount),
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: _kTextPrim,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            '${(percentage * 100).toStringAsFixed(2)}%',
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: _kTextSub,
-              fontSize: 13,
-            ),
-          ),
-        ),
-      ],
-    );
+  bool shouldRepaint(covariant _PieChartWithLinesPainter oldDelegate) {
+    return true;
   }
 }
