@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
+
 import '../model/pengeluaran_model.dart';
 import '../viewmodel/pengeluaran_viewmodel.dart';
 import '../viewmodel/dashboard_viewmodel.dart';
@@ -171,7 +170,6 @@ class PengeluaranView extends StatelessWidget {
           fmt: fmt,
           onEdit: () => _showFormDialog(context, item: item),
           onDelete: () => _confirmDelete(context, item.id!),
-          onViewBukti: (url) => _viewBukti(context, url),
         );
       },
     );
@@ -182,8 +180,14 @@ class PengeluaranView extends StatelessWidget {
     PengeluaranModel? item,
   }) async {
     final namaBarangCtrl = TextEditingController(text: item?.namaBarang);
-    final nominalCtrl = TextEditingController(
-      text: item != null ? _formatRibuan(item.nominal.toStringAsFixed(0)) : '',
+    final cashCtrl = TextEditingController(
+      text: item != null ? _formatRibuan(item.cash.toStringAsFixed(0)) : '0',
+    );
+    final transferCtrl = TextEditingController(
+      text: item != null ? _formatRibuan(item.transfer.toStringAsFixed(0)) : '0',
+    );
+    final qrisCtrl = TextEditingController(
+      text: item != null ? _formatRibuan(item.qris.toStringAsFixed(0)) : '0',
     );
     final keteranganCtrl = TextEditingController(text: item?.keterangan);
     final tanggalCtrl = TextEditingController(
@@ -191,93 +195,30 @@ class PengeluaranView extends StatelessWidget {
     );
     final formKey = GlobalKey<FormState>();
 
-    Uint8List? selectedFileBytes;
-    String? selectedFileName;
-    bool deleteExistingBukti = false;
-    final String? existingBuktiUrl = item?.buktiUrl;
-
-    Future<void> pickFile(BuildContext pickerCtx, StateSetter setModalState) async {
-      final source = await showModalBottomSheet<String>(
-        context: pickerCtx,
-        backgroundColor: const Color(0xFF1C1C1C),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (context) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Pilih Sumber Bukti Transaksi',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Color(0xFF1598A3)),
-                title: const Text('Kamera (Ambil Foto)', style: TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context, 'camera'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF1598A3)),
-                title: const Text('Galeri (Pilih Foto)', style: TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context, 'gallery'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.picture_as_pdf, color: Color(0xFF1598A3)),
-                title: const Text('Dokumen (Pilih PDF)', style: TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context, 'pdf'),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      if (source == null) return;
-
+    String getHariIndo(String dateStr) {
       try {
-        if (source == 'camera' || source == 'gallery') {
-          final picker = ImagePicker();
-          final image = await picker.pickImage(
-            source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
-            imageQuality: 70,
-          );
-          if (image != null) {
-            final bytes = await image.readAsBytes();
-            setModalState(() {
-              selectedFileBytes = bytes;
-              selectedFileName = image.name;
-              deleteExistingBukti = true;
-            });
-          }
-        } else if (source == 'pdf') {
-          final result = await FilePicker.pickFiles(
-            type: FileType.custom,
-            allowedExtensions: ['pdf'],
-            withData: true,
-          );
-          if (result != null && result.files.isNotEmpty) {
-            final file = result.files.first;
-            if (file.bytes != null) {
-              setModalState(() {
-                selectedFileBytes = file.bytes;
-                selectedFileName = file.name;
-                deleteExistingBukti = true;
-              });
-            }
-          }
+        final parsed = DateTime.parse(dateStr);
+        switch (parsed.weekday) {
+          case DateTime.monday:
+            return 'Senin';
+          case DateTime.tuesday:
+            return 'Selasa';
+          case DateTime.wednesday:
+            return 'Rabu';
+          case DateTime.thursday:
+            return 'Kamis';
+          case DateTime.friday:
+            return 'Jumat';
+          case DateTime.saturday:
+            return 'Sabtu';
+          case DateTime.sunday:
+            return 'Minggu';
         }
-      } catch (e) {
-        if (pickerCtx.mounted) {
-          ScaffoldMessenger.of(pickerCtx).showSnackBar(
-            SnackBar(
-              content: Text('Gagal memilih file: $e'),
-              backgroundColor: const Color(0xFFEF4444),
-            ),
-          );
-        }
-      }
+      } catch (_) {}
+      return 'Senin';
     }
+
+    String currentHari = getHariIndo(tanggalCtrl.text);
 
     final categories = [
       'Gaji & Uang Makan',
@@ -333,15 +274,70 @@ class PengeluaranView extends StatelessWidget {
                         )
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    _formField(
-                      namaBarangCtrl,
-                      'Nama Barang',
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Nama barang wajib diisi' : null,
+                    const SizedBox(height: 8),
+                    // Date row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              final date = await showDatePicker(
+                                context: sheetCtx,
+                                initialDate:
+                                    DateTime.tryParse(tanggalCtrl.text) ??
+                                        DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2100),
+                              );
+                              if (date != null) {
+                                final newDateStr =
+                                    DateFormat('yyyy-MM-dd').format(date);
+                                setModalState(() {
+                                  tanggalCtrl.text = newDateStr;
+                                  currentHari = getHariIndo(newDateStr);
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1598A3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                tanggalCtrl.text,
+                                style: const TextStyle(
+                                  color: Color(0xFF1E1E1E),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF262E3B),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            currentHari,
+                            style: const TextStyle(
+                              color: Color(0xFF1598A3),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    // ── Shift Dropdown (di bawah nama barang) ──────────────
+                    const SizedBox(height: 14),
+
+                    // ── Shift Dropdown ──────────────────────────────
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -409,6 +405,14 @@ class PengeluaranView extends StatelessWidget {
                           },
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    _formField(
+                      namaBarangCtrl,
+                      'Nama Barang',
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Nama barang wajib diisi' : null,
                     ),
                     const SizedBox(height: 12),
                     
@@ -483,194 +487,51 @@ class PengeluaranView extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+
+                    // ── Rincian Pengeluaran ──────────────────────────────
+                    const Text(
+                      'Rincian Pengeluaran',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 12),
-                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _formField(
+                            cashCtrl,
+                            'Cash',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [ThousandsSeparatorInputFormatter()],
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _formField(
+                            transferCtrl,
+                            'Transfer',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [ThousandsSeparatorInputFormatter()],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     _formField(
-                      nominalCtrl,
-                      'Nominal',
+                      qrisCtrl,
+                      'QRIS',
                       keyboardType: TextInputType.number,
                       inputFormatters: [ThousandsSeparatorInputFormatter()],
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Nominal wajib diisi';
-                        final raw = v.replaceAll('.', '');
-                        if (double.tryParse(raw) == null) return 'Angka tidak valid';
-                        return null;
-                      },
                     ),
-                    const SizedBox(height: 12),
-                    // Tanggal Picker
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Tanggal (YYYY-MM-DD)',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: tanggalCtrl,
-                          style: const TextStyle(
-                            color: Color(0xFF1E1E1E),
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFF1598A3),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
-                          ),
-                          onTap: () async {
-                            final date = await showDatePicker(
-                              context: sheetCtx,
-                              initialDate: DateTime.tryParse(tanggalCtrl.text) ?? DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2100),
-                            );
-                            if (date != null) {
-                              tanggalCtrl.text = DateFormat('yyyy-MM-dd').format(date);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _formField(keteranganCtrl, 'Keterangan (opsional)'),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
-                    // ── Bukti Transaksi File Picker ────────────────────────
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Bukti Transaksi (Nota / PDF)',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        if ((selectedFileBytes != null || (existingBuktiUrl != null && !deleteExistingBukti)))
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2D2D2D),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.white12),
-                            ),
-                            child: Row(
-                              children: [
-                                // Preview Thumbnail
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white10,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: selectedFileBytes != null
-                                      ? (selectedFileName?.toLowerCase().endsWith('.pdf') == true
-                                          ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 36)
-                                          : Image.memory(
-                                              selectedFileBytes!,
-                                              fit: BoxFit.cover,
-                                            ))
-                                      : (existingBuktiUrl!.toLowerCase().contains('.pdf') || existingBuktiUrl.contains('pdf')
-                                          ? const Icon(Icons.picture_as_pdf, color: Colors.red, size: 36)
-                                          : Image.network(
-                                              existingBuktiUrl,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white30),
-                                            )),
-                                ),
-                                const SizedBox(width: 12),
-                                // File details
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        selectedFileName ?? (existingBuktiUrl != null && (existingBuktiUrl.toLowerCase().contains('.pdf') || existingBuktiUrl.contains('pdf')) ? 'Nota_Transaksi.pdf' : 'Nota_Transaksi.jpg'),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        selectedFileBytes != null
-                                            ? '${(selectedFileBytes!.length / 1024).toStringAsFixed(1)} KB (Baru)'
-                                            : 'Tersimpan di Cloud',
-                                        style: const TextStyle(color: Colors.white38, fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Remove button
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
-                                  onPressed: () {
-                                    setModalState(() {
-                                      selectedFileBytes = null;
-                                      selectedFileName = null;
-                                      deleteExistingBukti = true;
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          InkWell(
-                            onTap: () => pickFile(context, setModalState),
-                            borderRadius: BorderRadius.circular(14),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: Colors.white24,
-                                  style: BorderStyle.solid,
-                                  width: 1,
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.cloud_upload_outlined, color: Color(0xFF1598A3)),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    'Unggah Foto Nota atau File PDF',
-                                    style: TextStyle(
-                                      color: Color(0xFF1598A3),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
+                    _formField(keteranganCtrl, 'Keterangan (opsional)'),
+                    const SizedBox(height: 24),
+
                     Consumer<PengeluaranViewModel>(
                       builder: (ctx, vm, _) => ElevatedButton(
                         onPressed: vm.isMutating
@@ -678,10 +539,18 @@ class PengeluaranView extends StatelessWidget {
                             : () async {
                                 if (!formKey.currentState!.validate()) return;
                                 final pengeluaranVm = ctx.read<PengeluaranViewModel>();
+                                final double c = double.tryParse(cashCtrl.text.replaceAll('.', '')) ?? 0.0;
+                                final double t = double.tryParse(transferCtrl.text.replaceAll('.', '')) ?? 0.0;
+                                final double q = double.tryParse(qrisCtrl.text.replaceAll('.', '')) ?? 0.0;
+                                final double total = c + t + q;
+
                                 final data = PengeluaranModel(
                                   id: item?.id,
                                   namaBarang: namaBarangCtrl.text.trim(),
-                                  nominal: double.parse(nominalCtrl.text.replaceAll('.', '')),
+                                  nominal: total,
+                                  cash: c,
+                                  transfer: t,
+                                  qris: q,
                                   kategori: selectedKategori,
                                   keterangan: keteranganCtrl.text.trim().isEmpty
                                       ? null
@@ -690,18 +559,8 @@ class PengeluaranView extends StatelessWidget {
                                   shift: selectedShift,
                                 );
                                 final success = item == null
-                                    ? await pengeluaranVm.create(
-                                        data,
-                                        fileBytes: selectedFileBytes,
-                                        fileName: selectedFileName,
-                                      )
-                                    : await pengeluaranVm.update(
-                                        item.id!,
-                                        data,
-                                        fileBytes: selectedFileBytes,
-                                        fileName: selectedFileName,
-                                        deleteExistingBukti: deleteExistingBukti,
-                                      );
+                                    ? await pengeluaranVm.create(data)
+                                    : await pengeluaranVm.update(item.id!, data);
                                 if (sheetCtx.mounted) {
                                   Navigator.pop(sheetCtx);
                                   if (success) {
@@ -789,111 +648,7 @@ class PengeluaranView extends StatelessWidget {
     }
   }
 
-  void _viewBukti(BuildContext context, String url) {
-    final isPdf = url.toLowerCase().contains('.pdf') || url.contains('pdf');
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: const Color(0xFF1E293B),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Bukti Transaksi',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: () => Navigator.pop(dialogCtx),
-                  ),
-                ],
-              ),
-            ),
-            if (isPdf)
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    const Icon(Icons.picture_as_pdf, color: Colors.red, size: 72),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Dokumen Bukti Transaksi (PDF)',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Salin tautan di bawah ini untuk melihat dokumen PDF nota:',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
-                    ),
-                    const SizedBox(height: 12),
-                    SelectableText(
-                      url,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFF1598A3), fontSize: 12, decoration: TextDecoration.underline),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.copy, size: 18),
-                      label: const Text('Salin Tautan'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1598A3),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: url));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tautan berhasil disalin!'), backgroundColor: Colors.green),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              )
-            else
-              Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.6,
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-                  child: InteractiveViewer(
-                    panEnabled: true,
-                    minScale: 0.5,
-                    maxScale: 4.0,
-                    child: Image.network(
-                      url,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (_, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(color: Color(0xFF1598A3)),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: Text('Gagal memuat gambar', style: TextStyle(color: Colors.white54)),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+
 }
 
 Widget _formField(
@@ -951,14 +706,12 @@ class _PengeluaranCard extends StatelessWidget {
   final NumberFormat fmt;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final Function(String) onViewBukti;
 
   const _PengeluaranCard({
     required this.item,
     required this.fmt,
     required this.onEdit,
     required this.onDelete,
-    required this.onViewBukti,
   });
 
   @override
@@ -998,68 +751,27 @@ class _PengeluaranCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (item.kategori != null && item.kategori!.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1598A3).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: const Color(0xFF1598A3).withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Text(
-                          item.kategori!,
-                          style: const TextStyle(
-                            color: Color(0xFF1598A3),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                if (item.kategori != null && item.kategori!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1598A3).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: const Color(0xFF1598A3).withValues(alpha: 0.3),
                       ),
-                    if (item.buktiUrl != null && item.buktiUrl!.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () => onViewBukti(item.buktiUrl!),
-                        borderRadius: BorderRadius.circular(6),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF22C55E).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: const Color(0xFF22C55E).withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                (item.buktiUrl!.toLowerCase().contains('.pdf') || item.buktiUrl!.contains('pdf'))
-                                    ? Icons.picture_as_pdf
-                                    : Icons.receipt_long,
-                                color: const Color(0xFF22C55E),
-                                size: 10,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                (item.buktiUrl!.toLowerCase().contains('.pdf') || item.buktiUrl!.contains('pdf')) ? 'PDF Nota' : 'Nota',
-                                style: const TextStyle(
-                                  color: Color(0xFF22C55E),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    ),
+                    child: Text(
+                      item.kategori!,
+                      style: const TextStyle(
+                        color: Color(0xFF1598A3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ],
-                ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 6),
                 Text(
                   'TGL: ${item.tanggal} • Dibuat oleh: ${item.createdBy ?? '-'}',
@@ -1103,6 +815,13 @@ class _PengeluaranCard extends StatelessWidget {
                   fontSize: 16,
                 ),
               ),
+              const SizedBox(height: 4),
+              if (item.cash > 0)
+                Text('Cash: ${fmt.format(item.cash)}', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+              if (item.transfer > 0)
+                Text('TF: ${fmt.format(item.transfer)}', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+              if (item.qris > 0)
+                Text('QRIS: ${fmt.format(item.qris)}', style: const TextStyle(color: Colors.white38, fontSize: 10)),
               const SizedBox(height: 8),
               Row(
                 children: [

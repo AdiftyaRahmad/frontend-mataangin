@@ -146,10 +146,12 @@ class PengeluaranService {
     return {
       'nama_barang': model.namaBarang,
       'nominal': model.nominal.toInt(),
+      'cash': model.cash.toInt(),
+      'transfer': model.transfer.toInt(),
+      'qris': model.qris.toInt(),
       'keterangan': model.keterangan ?? '',
       'kategori': model.kategori ?? 'Lainnya',
       'tanggal': Timestamp.fromDate(parsedDate),
-      'bukti_url': model.buktiUrl,
       'shift': model.shift,
       'created_by': uid,
       'created_by_name': userName,
@@ -173,14 +175,24 @@ class PengeluaranService {
       dateStr = (data['tanggal'] as String).split('T')[0];
     }
 
+    final double cash = (data['cash'] as num?)?.toDouble() ?? 0.0;
+    final double transfer = (data['transfer'] as num?)?.toDouble() ?? 0.0;
+    final double qris = (data['qris'] as num?)?.toDouble() ?? 0.0;
+    final double parsedNominal = (data['nominal'] as num?)?.toDouble() ?? 0.0;
+
+    final double finalCash = (cash == 0 && transfer == 0 && qris == 0 && parsedNominal > 0) ? parsedNominal : cash;
+    final double finalNominal = parsedNominal > 0 ? parsedNominal : (finalCash + transfer + qris);
+
     return PengeluaranModel(
       id: doc.id,
       namaBarang: data['nama_barang'] ?? '',
-      nominal: (data['nominal'] as num?)?.toDouble() ?? 0.0,
+      nominal: finalNominal,
+      cash: finalCash,
+      transfer: transfer,
+      qris: qris,
       keterangan: data['keterangan'],
       kategori: data['kategori'] ?? 'Lainnya',
       tanggal: dateStr,
-      buktiUrl: data['bukti_url'] ?? data['buktiUrl'],
       shift: int.tryParse(data['shift']?.toString() ?? '1') ?? 1,
       createdBy: userName,
       createdAt: (data['created_at'] as Timestamp?)?.toDate().toIso8601String(),
