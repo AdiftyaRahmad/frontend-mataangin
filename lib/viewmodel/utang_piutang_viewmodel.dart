@@ -24,11 +24,11 @@ class UtangPiutangViewModel extends ChangeNotifier {
 
   double get totalUtang => _list
       .where((e) => e.tipe.toLowerCase() == 'utang')
-      .fold(0.0, (sum, item) => sum + item.totalTagihan);
+      .fold(0.0, (sum, item) => sum + item.sisaPembayaran);
 
   double get totalPiutang => _list
       .where((e) => e.tipe.toLowerCase() == 'piutang')
-      .fold(0.0, (sum, item) => sum + item.totalTagihan);
+      .fold(0.0, (sum, item) => sum + item.sisaPembayaran);
 
   double get totalBelumLunasUtang => _list
       .where((e) => e.tipe.toLowerCase() == 'utang' && e.status == 'belum_lunas')
