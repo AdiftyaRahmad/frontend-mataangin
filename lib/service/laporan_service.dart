@@ -41,8 +41,9 @@ class LaporanService {
       if (data['setoran_aktual'] != null) {
         ket += ', Setoran: ${data['setoran_aktual']}, Selisih: ${data['selisih'] ?? 0}';
       }
+      final shiftVal = data['shift'] ?? 1;
       transaksi.add(LaporanItem(
-        judul: 'Pemasukan - ${data['hari'] ?? ''}',
+        judul: 'Pemasukan - ${data['hari'] ?? ''} (Shift $shiftVal)',
         jumlah: amount,
         jenis: 'pemasukan',
         tanggal: tanggalStr,
@@ -57,8 +58,9 @@ class LaporanService {
       final kat = data['kategori'] ?? 'Lainnya';
       final ket = data['keterangan'] ?? '';
       final desc = ket.toString().isNotEmpty ? '[$kat] $ket' : '[$kat]';
+      final pShiftVal = data['shift'] ?? 1;
       transaksi.add(LaporanItem(
-        judul: data['nama_barang'] ?? '',
+        judul: '${data['nama_barang'] ?? ''} (Shift $pShiftVal)',
         jumlah: amount,
         jenis: 'pengeluaran',
         tanggal: tanggalStr,
@@ -114,8 +116,9 @@ class LaporanService {
         ket += ', Setoran: ${data['setoran_aktual']}, Selisih: ${data['selisih'] ?? 0}';
       }
 
+      final shiftVal = data['shift'] ?? 1;
       transaksi.add(LaporanItem(
-        judul: 'Pemasukan - ${data['hari'] ?? ''}',
+        judul: 'Pemasukan - ${data['hari'] ?? ''} (Shift $shiftVal)',
         jumlah: amount,
         jenis: 'pemasukan',
         tanggal: dateStr,
@@ -135,8 +138,9 @@ class LaporanService {
       final kat = data['kategori'] ?? 'Lainnya';
       final ket = data['keterangan'] ?? '';
       final desc = ket.toString().isNotEmpty ? '[$kat] $ket' : '[$kat]';
+      final pShiftVal = data['shift'] ?? 1;
       transaksi.add(LaporanItem(
-        judul: data['nama_barang'] ?? '',
+        judul: '${data['nama_barang'] ?? ''} (Shift $pShiftVal)',
         jumlah: amount,
         jenis: 'pengeluaran',
         tanggal: dateStr,

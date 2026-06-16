@@ -232,6 +232,7 @@ class PemasukanView extends StatelessWidget {
     double otherPemasukan = 0.0;
     bool isLoadingDaily = false;
     bool isFirstLoad = true;
+    int selectedShift = item?.shift ?? 1;
 
     await showModalBottomSheet(
       context: context,
@@ -246,7 +247,7 @@ class PemasukanView extends StatelessWidget {
             try {
               final summary = await sheetCtx
                   .read<PemasukanViewModel>()
-                  .getDailySummary(dateStr, excludeId: item?.id);
+                  .getDailySummary(dateStr, selectedShift, excludeId: item?.id);
               setModalState(() {
                 totalPengeluaran = summary['totalPengeluaran'] ?? 0.0;
                 otherPemasukan = summary['otherPemasukan'] ?? 0.0;
@@ -386,6 +387,77 @@ class PemasukanView extends StatelessWidget {
                                       fontSize: 15,
                                     ),
                                   ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            // ── Shift Dropdown ──────────────────────────────
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Shift',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<int>(
+                                  initialValue: selectedShift,
+                                  dropdownColor: const Color(0xFF1C1C1C),
+                                  style: const TextStyle(
+                                    color: Color(0xFF1E1E1E),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  iconEnabledColor: const Color(0xFF1E1E1E),
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: const Color(0xFF1598A3),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  selectedItemBuilder: (BuildContext context) {
+                                    return [1, 2].map((s) {
+                                      return Text(
+                                        'Shift $s',
+                                        style: const TextStyle(
+                                          color: Color(0xFF1E1E1E),
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      );
+                                    }).toList();
+                                  },
+                                  items: [1, 2].map((s) {
+                                    return DropdownMenuItem(
+                                      value: s,
+                                      child: Text(
+                                        'Shift $s',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setModalState(() => selectedShift = val);
+                                      fetchDaily(tanggalCtrl.text);
+                                    }
+                                  },
                                 ),
                               ],
                             ),
@@ -613,6 +685,7 @@ class PemasukanView extends StatelessWidget {
                                       saldoSistem: getSaldoSistem(),
                                       selisih: getSelisih(),
                                       catatan: catatanCtrl.text,
+                                      shift: selectedShift,
                                     );
                                     bool success;
                                     if (item == null) {
@@ -798,14 +871,14 @@ class _PemasukanCardState extends State<_PemasukanCard> {
     final pengeluaranVm = context.watch<PengeluaranViewModel>();
     final pemasukanVm = context.watch<PemasukanViewModel>();
 
-    // Hitung total pengeluaran hari ini secara real-time dari list pengeluaran yang di-load
+    // Hitung total pengeluaran hari ini secara real-time dari list pengeluaran yang di-load (per shift)
     final totalPengeluaran = pengeluaranVm.list
-        .where((e) => e.tanggal == widget.item.tanggal)
+        .where((e) => e.tanggal == widget.item.tanggal && e.shift == widget.item.shift)
         .fold(0.0, (sum, e) => sum + e.nominal);
 
-    // Hitung pemasukan lain pada hari yang sama (selain dokumen pemasukan ini) secara real-time
+    // Hitung pemasukan lain pada hari yang sama dan shift yang sama (selain dokumen pemasukan ini) secara real-time
     final otherPemasukan = pemasukanVm.list
-        .where((e) => e.tanggal == widget.item.tanggal && e.id != widget.item.id)
+        .where((e) => e.tanggal == widget.item.tanggal && e.id != widget.item.id && e.shift == widget.item.shift)
         .fold(0.0, (sum, e) => sum + e.totalPemasukan);
 
     // Saldo sistem real-time = total pemasukan record ini + pemasukan lain - total pengeluaran
@@ -889,6 +962,14 @@ class _PemasukanCardState extends State<_PemasukanCard> {
                           fontSize: 12,
                         ),
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Shift ${widget.item.shift}',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -946,7 +1027,6 @@ class _PemasukanCardState extends State<_PemasukanCard> {
             if (_isExpanded) ...[
               const SizedBox(height: 16),
               _rincianRow('Total Pemasukan', widget.fmt.format(widget.item.totalPemasukan), valueColor: const Color(0xFF1598A3)),
-              _rincianRow('Total Pengeluaran', widget.fmt.format(totalPengeluaran), valueColor: const Color(0xFFEF4444)),
               _rincianRow('Saldo Sistem', widget.fmt.format(saldoSistem), valueColor: const Color(0xFF1598A3)),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),

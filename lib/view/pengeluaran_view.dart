@@ -292,6 +292,7 @@ class PengeluaranView extends StatelessWidget {
     if (!categories.contains(selectedKategori)) {
       selectedKategori = 'Gaji & Uang Makan';
     }
+    int selectedShift = item?.shift ?? 1;
 
     await showModalBottomSheet(
       context: context,
@@ -338,6 +339,76 @@ class PengeluaranView extends StatelessWidget {
                       'Nama Barang',
                       validator: (v) =>
                           v == null || v.isEmpty ? 'Nama barang wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    // ── Shift Dropdown (di bawah nama barang) ──────────────
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Shift',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<int>(
+                          initialValue: selectedShift,
+                          dropdownColor: const Color(0xFF1C1C1C),
+                          style: const TextStyle(
+                            color: Color(0xFF1E1E1E),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          iconEnabledColor: const Color(0xFF1E1E1E),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFF1598A3),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          selectedItemBuilder: (BuildContext context) {
+                            return [1, 2].map((s) {
+                              return Text(
+                                'Shift $s',
+                                style: const TextStyle(
+                                  color: Color(0xFF1E1E1E),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            }).toList();
+                          },
+                          items: [1, 2].map((s) {
+                            return DropdownMenuItem(
+                              value: s,
+                              child: Text(
+                                'Shift $s',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setModalState(() => selectedShift = val);
+                            }
+                          },
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     
@@ -616,6 +687,7 @@ class PengeluaranView extends StatelessWidget {
                                       ? null
                                       : keteranganCtrl.text.trim(),
                                   tanggal: tanggalCtrl.text,
+                                  shift: selectedShift,
                                 );
                                 final success = item == null
                                     ? await pengeluaranVm.create(
@@ -991,6 +1063,15 @@ class _PengeluaranCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'TGL: ${item.tanggal} • Dibuat oleh: ${item.createdBy ?? '-'}',
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Shift ${item.shift}',
                   style: const TextStyle(
                     color: Colors.white54,
                     fontSize: 11,

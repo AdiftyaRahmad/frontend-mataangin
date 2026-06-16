@@ -165,7 +165,7 @@ class _HomeTab extends StatelessWidget {
     final List<_TxData> allTx = [
       ...pemasukanVm.list.map(
         (e) => _TxData(
-          judul: 'Pemasukan - ${e.hari}',
+          judul: 'Pemasukan - ${e.hari} (Shift ${e.shift})',
           jumlah: e.totalPemasukan,
           tanggal: e.tanggal,
           isIncome: true,
@@ -173,7 +173,7 @@ class _HomeTab extends StatelessWidget {
       ),
       ...pengeluaranVm.list.map(
         (e) => _TxData(
-          judul: e.namaBarang,
+          judul: '${e.namaBarang} (Shift ${e.shift})',
           jumlah: e.nominal,
           tanggal: e.tanggal,
           isIncome: false,

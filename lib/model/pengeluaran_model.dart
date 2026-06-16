@@ -6,6 +6,7 @@ class PengeluaranModel {
   final String tanggal;
   final String? kategori;
   final String? buktiUrl;
+  final int shift;
   final dynamic createdBy;
   final String? createdAt;
   final String? updatedAt;
@@ -18,6 +19,7 @@ class PengeluaranModel {
     required this.tanggal,
     this.kategori,
     this.buktiUrl,
+    this.shift = 1,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -32,6 +34,7 @@ class PengeluaranModel {
       tanggal: json['tanggal'] ?? json['created_at'] ?? '',
       kategori: json['kategori']?.toString() ?? json['category']?.toString(),
       buktiUrl: json['bukti_url'] ?? json['buktiUrl'],
+      shift: int.tryParse(json['shift']?.toString() ?? '1') ?? 1,
       createdBy: json['created_by'] ?? json['createdBy'],
       createdAt: json['created_at'] ?? json['createdAt'],
       updatedAt: json['updated_at'] ?? json['updatedAt'],
@@ -45,6 +48,7 @@ class PengeluaranModel {
         'tanggal': tanggal,
         'kategori': kategori,
         'bukti_url': buktiUrl,
+        'shift': shift,
       };
 
   PengeluaranModel copyWith({
@@ -55,6 +59,7 @@ class PengeluaranModel {
     String? tanggal,
     String? kategori,
     String? buktiUrl,
+    int? shift,
     dynamic createdBy,
     String? createdAt,
     String? updatedAt,
@@ -67,6 +72,7 @@ class PengeluaranModel {
       tanggal: tanggal ?? this.tanggal,
       kategori: kategori ?? this.kategori,
       buktiUrl: buktiUrl ?? this.buktiUrl,
+      shift: shift ?? this.shift,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

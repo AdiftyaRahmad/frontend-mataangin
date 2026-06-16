@@ -98,6 +98,6 @@ class PemasukanViewModel extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, double>> getDailySummary(String dateStr, {String? excludeId}) =>
-      _repository.getDailySummary(dateStr, excludeId: excludeId);
+  Future<Map<String, double>> getDailySummary(String dateStr, int shift, {String? excludeId}) =>
+      _repository.getDailySummary(dateStr, shift, excludeId: excludeId);
 }

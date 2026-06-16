@@ -132,6 +132,7 @@ class PemasukanService {
       'saldo_sistem': model.saldoSistem.toInt(),
       'selisih': model.selisih.toInt(),
       'catatan': model.catatan ?? '',
+      'shift': model.shift,
       'created_by': uid,
       'created_by_name': userName,
       'created_at': FieldValue.serverTimestamp(),
@@ -169,14 +170,15 @@ class PemasukanService {
       saldoSistem: (data['saldo_sistem'] as num?)?.toDouble() ?? 0.0,
       selisih: (data['selisih'] as num?)?.toDouble() ?? 0.0,
       catatan: data['catatan']?.toString() ?? '',
+      shift: int.tryParse(data['shift']?.toString() ?? '1') ?? 1,
       createdBy: userName,
       createdAt: (data['created_at'] as Timestamp?)?.toDate().toIso8601String(),
       updatedAt: (data['updated_at'] as Timestamp?)?.toDate().toIso8601String(),
     );
   }
 
-  /// GET daily summary of total pengeluaran and other pemasukan on a date
-  Future<Map<String, double>> getDailySummary(String dateStr, {String? excludeId}) async {
+  /// GET daily summary of total pengeluaran and other pemasukan on a date, filtered by shift
+  Future<Map<String, double>> getDailySummary(String dateStr, int shift, {String? excludeId}) async {
     final date = DateTime.parse(dateStr);
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
@@ -189,7 +191,10 @@ class PemasukanService {
 
     double totalPengeluaran = 0.0;
     for (var doc in pengeluaranSnap.docs) {
-      totalPengeluaran += (doc.data()['nominal'] as num?)?.toDouble() ?? 0.0;
+      final docShift = int.tryParse(doc.data()['shift']?.toString() ?? '1') ?? 1;
+      if (docShift == shift) {
+        totalPengeluaran += (doc.data()['nominal'] as num?)?.toDouble() ?? 0.0;
+      }
     }
 
     final pemasukanSnap = await _ref
@@ -200,7 +205,10 @@ class PemasukanService {
     double otherPemasukan = 0.0;
     for (var doc in pemasukanSnap.docs) {
       if (excludeId != null && doc.id == excludeId) continue;
-      otherPemasukan += (doc.data()['total_pemasukan'] as num?)?.toDouble() ?? 0.0;
+      final docShift = int.tryParse(doc.data()['shift']?.toString() ?? '1') ?? 1;
+      if (docShift == shift) {
+        otherPemasukan += (doc.data()['total_pemasukan'] as num?)?.toDouble() ?? 0.0;
+      }
     }
 
     return {
