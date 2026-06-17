@@ -3,6 +3,8 @@ import '../core/constants/app_enums.dart';
 import '../model/laporan_model.dart';
 import '../repository/laporan_repository.dart';
 import '../core/utils/file_saver.dart';
+import 'package:path_provider/path_provider.dart';
+import '../core/utils/share_helper.dart';
 
 export '../core/constants/app_enums.dart' show ViewState;
 
@@ -99,7 +101,10 @@ class LaporanViewModel extends ChangeNotifier {
       final bytes = await _repository.exportPdfBytes(laporanToExport, periode: periode);
       final now = DateTime.now();
       final fileName = 'laporan_mata_angin_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.pdf';
-      await saveFile(bytes, fileName, 'application/pdf');
+        await saveFile(bytes, fileName, 'application/pdf');
+          // After saving, share the PDF using the system share sheet.
+          final savedPath = await _getSavedFilePath(fileName);
+            await shareFile(savedPath, mimeType: 'application/pdf', text: 'Laporan Mata Angin PDF');
       _exportState = ViewState.success;
       notifyListeners();
       return true;
@@ -109,5 +114,19 @@ class LaporanViewModel extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  // Helper to retrieve the full path of the saved file. Mirrors the logic in
+  // `file_saver_mobile.dart` for consistency.
+  Future<String> _getSavedFilePath(String fileName) async {
+    // Reuse the same directory resolution as in `saveFile`.
+    try {
+      final dir = await getExternalStorageDirectory();
+      if (dir != null) {
+        return '${dir.path}/$fileName';
+      }
+    } catch (_) {}
+    final temp = await getTemporaryDirectory();
+    return '${temp.path}/$fileName';
   }
 }

@@ -1082,7 +1082,7 @@ class _PemasukanCardState extends State<_PemasukanCard> {
             if (_isExpanded) ...[
               const SizedBox(height: 16),
               _rincianRow('Total Pemasukan', widget.fmt.format(widget.item.totalPemasukan), valueColor: const Color(0xFF1598A3)),
-              _rincianRow('Saldo Sistem', widget.fmt.format(saldoSistem), valueColor: const Color(0xFF1598A3)),
+              _rincianRow('Saldo Sistem', widget.fmt.format(saldoSistem)),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
                 child: Divider(color: Colors.white10, height: 1),
