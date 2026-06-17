@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-import 'core/utils/token_manager.dart';
+
 import 'viewmodel/auth_viewmodel.dart';
 import 'viewmodel/dashboard_viewmodel.dart';
 import 'viewmodel/pemasukan_viewmodel.dart';
@@ -83,13 +83,14 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
   Future<void> _navigate() async {
     await Future.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
-    final isLoggedIn = await TokenManager.isLoggedIn();
+    final authVm = context.read<AuthViewModel>();
+    await authVm.checkAuthStatus();
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (_, __, ___) =>
-            isLoggedIn ? const DashboardView() : const LoginView(),
+            authVm.isAuthenticated ? const DashboardView() : const LoginView(),
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
         transitionDuration: const Duration(milliseconds: 400),

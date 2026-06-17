@@ -976,6 +976,61 @@ class _PemasukanCardState extends State<_PemasukanCard> {
               ],
             ),
 
+            // ── Pelunasan Piutang Badge ─────────────────────────────────
+            if (widget.item.keteranganPelunasan != null && widget.item.keteranganPelunasan!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF22C55E).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF22C55E).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.handshake_outlined,
+                        color: Color(0xFF22C55E),
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Pelunasan Piutang',
+                            style: TextStyle(
+                              color: Color(0xFF22C55E),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.item.keteranganPelunasan!,
+                            style: TextStyle(
+                              color: const Color(0xFF22C55E).withValues(alpha: 0.7),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             // ── Divider ────────────────────────────────────────────────────
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),

@@ -24,7 +24,22 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<void> checkAuthStatus() async {
     final loggedIn = await TokenManager.isLoggedIn();
-    _state = loggedIn ? AuthState.authenticated : AuthState.unauthenticated;
+    if (loggedIn) {
+      // Restore user data from SharedPreferences
+      final name = await TokenManager.getUserData();
+      final role = await TokenManager.getUserRole();
+      if (name != null && name.isNotEmpty) {
+        _user = UserModel(
+          id: '',
+          name: name,
+          email: '',
+          role: role ?? 'operator',
+        );
+      }
+      _state = AuthState.authenticated;
+    } else {
+      _state = AuthState.unauthenticated;
+    }
     notifyListeners();
   }
 

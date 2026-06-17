@@ -170,6 +170,7 @@ class PemasukanService {
       saldoSistem: (data['saldo_sistem'] as num?)?.toDouble() ?? 0.0,
       selisih: (data['selisih'] as num?)?.toDouble() ?? 0.0,
       catatan: data['catatan']?.toString() ?? '',
+      keteranganPelunasan: data['keterangan_pelunasan']?.toString(),
       shift: int.tryParse(data['shift']?.toString() ?? '1') ?? 1,
       createdBy: userName,
       createdAt: (data['created_at'] as Timestamp?)?.toDate().toIso8601String(),
