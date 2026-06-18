@@ -39,7 +39,7 @@ class MataAnginApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LaporanViewModel()),
       ],
       child: MaterialApp(
-        title: 'Mata Angin Finance',
+        title: 'Mata Angin',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
@@ -140,7 +140,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                 const SizedBox(height: 28),
                 // ── App name ──────────────────────────────────────────────
                 const Text(
-                  'Mata Angin Finance',
+                  'Mata Angin',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 28,

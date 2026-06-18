@@ -1,5 +1,4 @@
 import 'package:share_plus/share_plus.dart';
-import 'package:share_plus/share_plus.dart' show XFile;
 
 /// Shares a single file located at [filePath] using the native share sheet.
 ///
@@ -9,5 +8,6 @@ import 'package:share_plus/share_plus.dart' show XFile;
 Future<void> shareFile(String filePath, {String? mimeType, String? text}) async {
   // Convert the file path to an XFile, which is required by the newer API.
   final xFile = XFile(filePath, mimeType: mimeType);
+  // ignore: deprecated_member_use
   await Share.shareXFiles([xFile], text: text);
 }

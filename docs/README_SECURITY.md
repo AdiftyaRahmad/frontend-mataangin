@@ -1,4 +1,4 @@
-# 🔒 Security Guide - Mata Angin Finance
+# 🔒 Security Guide - Mata Angin
 
 ## File Sensitif yang Sudah Diamankan
 

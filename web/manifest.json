@@ -1,6 +1,6 @@
 {
-    "name": "frontend_mataangin",
-    "short_name": "frontend_mataangin",
+    "name": "Mata Angin",
+    "short_name": "Mata Angin",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

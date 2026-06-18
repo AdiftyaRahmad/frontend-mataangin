@@ -29,7 +29,7 @@ class PdfGenerator {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    'Mata Angin Finance',
+                    'Mata Angin',
                     style: const pw.TextStyle(
                       fontSize: 16,
                       color: PdfColors.grey700,

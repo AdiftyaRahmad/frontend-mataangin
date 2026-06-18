@@ -26,8 +26,8 @@ ios/firebase_app_id_file.json
 *.pem
 *.p12
 *.keystore
-!debug.keystore
 google-services.json
+google-services.json.backup
 GoogleService-Info.plist
 firebase_app_id_file.json
 serviceAccountKey.json
@@ -35,8 +35,26 @@ credentials.json
 secrets.json
 config.json
 *.config.json
+firebase_options.dart
 
-# Security documentation (contains sensitive info)
+# Firebase project config (contains app IDs & project info)
+firebase.json
+
+# User data export (contains password hashes & sensitive user data)
+users_export.json
+
+# Security scripts (contain internal project references)
+cleanup_git_history.bat
+regenerate_keys.bat
+
+# Security documentation (contains API keys, project IDs, internal config)
+docs/URGENT_SECURITY_STEPS.md
+docs/ANDROID_CONFIG_EXTRACTED.md
+docs/QUICK_REFERENCE_API_KEYS.md
+docs/GUIDE_GENERATE_NEW_API_KEYS.md
+docs/REGENERATE_API_KEYS.md
+docs/CARA_MUDAH_GENERATE_KEYS.md
+docs/GENERATE_MANUAL_SIMPLE.md
 URGENT_SECURITY_STEPS.md
 ANDROID_CONFIG_EXTRACTED.md
 
@@ -55,6 +73,7 @@ ANDROID_CONFIG_EXTRACTED.md
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
@@ -71,6 +90,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-firebase_options.dart
-google-services.json
-google-services.json.backup
