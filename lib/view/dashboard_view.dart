@@ -647,6 +647,42 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
+// ─── Empty Expense State for Pie Chart ─────────────────────────────────────────
+
+class _EmptyExpenseState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.pie_chart_outline_rounded,
+              size: 52,
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Belum ada data pengeluaran',
+              style: TextStyle(color: _kTextSub, fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tambahkan pengeluaran untuk melihat diagram',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.3),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Expense Breakdown Card ──────────────────────────────────────────────────
 
 class _ExpenseBreakdownCard extends StatelessWidget {
@@ -700,19 +736,20 @@ class _ExpenseBreakdownCard extends StatelessWidget {
     }
 
     final List<_PieSliceData> slices = [];
-    final bool useMock = calculatedTotal == 0.0;
 
+    // Only build slices for categories that have actual data
     categoriesData.forEach((label, data) {
-      final double amount = useMock ? 100000.0 : (data['amount'] as double);
-      final double totalForPct = useMock ? 600000.0 : calculatedTotal;
-      final double percentage = totalForPct > 0 ? (amount / totalForPct) : 0.0;
+      final double amount = data['amount'] as double;
+      final double percentage = calculatedTotal > 0 ? (amount / calculatedTotal) : 0.0;
       slices.add(_PieSliceData(
         label: label,
-        value: useMock ? 100000.0 : (data['amount'] as double),
+        value: amount,
         percentage: percentage,
         color: data['color'] as Color,
       ));
     });
+
+    final bool hasData = calculatedTotal > 0;
 
     return Container(
       width: double.infinity,
@@ -724,22 +761,23 @@ class _ExpenseBreakdownCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SizedBox(
-                  width: constraints.maxWidth,
-                  height: 300,
-                  child: CustomPaint(
-                    painter: _PieChartPainter(slices: slices),
-                  ),
-                );
-              },
+          if (hasData) ...[
+            Center(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SizedBox(
+                    width: constraints.maxWidth,
+                    height: 300,
+                    child: CustomPaint(
+                      painter: _PieChartPainter(slices: slices),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          // Categories list below the chart
-          ...slices.map((slice) {
+            const SizedBox(height: 20),
+            // Categories list below the chart
+            ...slices.where((slice) => slice.value > 0).map((slice) {
             final double displayAmount = slice.value;
             final int displayPct = (slice.percentage * 100).round();
             return Container(
@@ -786,6 +824,8 @@ class _ExpenseBreakdownCard extends StatelessWidget {
               ),
             );
           }),
+          ] else
+            _EmptyExpenseState(),
         ],
       ),
     );
