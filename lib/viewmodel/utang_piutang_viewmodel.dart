@@ -70,6 +70,35 @@ class UtangPiutangViewModel extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> createWithSettlement(UtangPiutangModel item) async {
+    _mutating = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final result = await _repository.createWithSettlement(item);
+      final created = result['createdItem'] as UtangPiutangModel;
+      _list = [created, ..._list];
+      _mutating = false;
+      notifyListeners();
+      return {
+        'success': true,
+        'settlementCreated': result['settlementCreated'] ?? false,
+        'settlementType': result['settlementType'],
+        'settlementAmount': result['settlementAmount'] ?? 0.0,
+      };
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('AppException: ', '');
+      _mutating = false;
+      notifyListeners();
+      return {
+        'success': false,
+        'settlementCreated': false,
+        'settlementType': null,
+        'settlementAmount': 0.0,
+      };
+    }
+  }
+
   Future<bool> update(String id, UtangPiutangModel item) async {
     _mutating = true;
     _errorMessage = null;

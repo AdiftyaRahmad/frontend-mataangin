@@ -49,6 +49,7 @@ class PemasukanService {
       final userName = await _resolveUserName(uid, cache, data);
       list.add(_mapFromFirestore(doc, userName));
     }
+    list.sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
     return list;
   }
 

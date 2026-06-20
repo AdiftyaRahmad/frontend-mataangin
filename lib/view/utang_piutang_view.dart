@@ -4,10 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/utang_piutang_model.dart';
 import '../viewmodel/utang_piutang_viewmodel.dart';
+import '../viewmodel/dashboard_viewmodel.dart';
+import '../viewmodel/pemasukan_viewmodel.dart';
+import '../viewmodel/pengeluaran_viewmodel.dart';
 import '../core/widgets/admin_only_widget.dart';
 
 class UtangPiutangView extends StatefulWidget {
-  const UtangPiutangView({super.key});
+  final ValueChanged<int>? onNavigateTab;
+  const UtangPiutangView({super.key, this.onNavigateTab});
 
   @override
   State<UtangPiutangView> createState() => _UtangPiutangViewState();
@@ -632,11 +636,55 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                     );
 
                                     if (item == null) {
-                                      // CREATE - no settlement logic needed
-                                      final success = await vm.create(model);
+                                      // CREATE with optional DP/Settlement logic
+                                      final result = await vm.createWithSettlement(model);
                                       if (context.mounted) {
                                         Navigator.pop(sheetCtx);
-                                        if (!success) {
+                                        final success = result['success'] as bool;
+                                        if (success) {
+                                          final settlementCreated = result['settlementCreated'] as bool;
+                                          if (settlementCreated) {
+                                            final settlementType = result['settlementType'] as String?;
+                                            final settlementAmount = result['settlementAmount'] as double;
+                                            final typeLabel = settlementType == 'pemasukan' ? 'Pemasukan' : 'Pengeluaran';
+                                            
+                                            // Refresh viewmodels
+                                            context.read<DashboardViewModel>().loadDashboard();
+                                            if (settlementType == 'pemasukan') {
+                                              context.read<PemasukanViewModel>().loadAll();
+                                            } else if (settlementType == 'pengeluaran') {
+                                              context.read<PengeluaranViewModel>().loadAll();
+                                            }
+                                            
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Row(
+                                                  children: [
+                                                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        newStatus == 'lunas'
+                                                            ? 'Lunas! ${fmtCur.format(settlementAmount)} otomatis tercatat di $typeLabel hari ini'
+                                                            : 'DP sebesar ${fmtCur.format(settlementAmount)} otomatis tercatat di $typeLabel hari ini',
+                                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                backgroundColor: const Color(0xFF22C55E),
+                                                duration: const Duration(seconds: 4),
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                            );
+
+                                            // Jika statusnya lunas, langsung arahkan ke dashboard tab (index 0)
+                                            if (newStatus == 'lunas') {
+                                              widget.onNavigateTab?.call(0);
+                                            }
+                                          }
+                                        } else {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
                                               content: Text(vm.errorMessage ?? 'Gagal menyimpan'),
@@ -680,6 +728,15 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                             final settlementType = result['settlementType'] as String?;
                                             final settlementAmount = result['settlementAmount'] as double;
                                             final typeLabel = settlementType == 'pemasukan' ? 'Pemasukan' : 'Pengeluaran';
+                                            
+                                            // Refresh viewmodels
+                                            context.read<DashboardViewModel>().loadDashboard();
+                                            if (settlementType == 'pemasukan') {
+                                              context.read<PemasukanViewModel>().loadAll();
+                                            } else if (settlementType == 'pengeluaran') {
+                                              context.read<PengeluaranViewModel>().loadAll();
+                                            }
+                                            
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
                                                 content: Row(
@@ -700,6 +757,9 @@ class _UtangPiutangViewState extends State<UtangPiutangView> with SingleTickerPr
                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                               ),
                                             );
+
+                                            // Redirect to dashboard (index 0)
+                                            widget.onNavigateTab?.call(0);
                                           }
                                         } else {
                                           ScaffoldMessenger.of(context).showSnackBar(

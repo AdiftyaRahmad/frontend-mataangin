@@ -79,6 +79,96 @@ class UtangPiutangService {
     return _mapFromFirestore(doc, userName);
   }
 
+  /// POST /create a new utang_piutang record with optional settlement/DP recording
+  Future<Map<String, dynamic>> createWithSettlement(UtangPiutangModel utangPiutang) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw Exception('Pengguna tidak terautentikasi.');
+    }
+
+    final userName = await _resolveUserName(uid, null, {});
+    final data = _mapToFirestore(utangPiutang, uid, userName);
+
+    // Calculate initial paid amount (DP or full payment)
+    final paidAmount = utangPiutang.totalTagihan - utangPiutang.sisaPembayaran;
+    final hasInitialPayment = paidAmount > 0;
+
+    final docRef = _ref.doc(); // Generate ID beforehand
+
+    if (hasInitialPayment) {
+      final batch = _firestore.batch();
+      
+      // 1. Create the utang_piutang document
+      batch.set(docRef, data);
+
+      // 2. Create settlement/payment record
+      final recordDate = DateTime.now();
+      final todayStr = DateFormat('yyyy-MM-dd').format(recordDate);
+      final hariIndo = _getHariIndonesia(recordDate.weekday);
+      final tipe = utangPiutang.tipe.toLowerCase();
+
+      if (tipe == 'piutang' || tipe == 'customer') {
+        // Piutang DP/Full payment → customer pays us → Pemasukan
+        final pemasukanRef = _firestore.collection('pemasukan').doc();
+        batch.set(pemasukanRef, {
+          'tanggal': Timestamp.fromDate(DateTime.parse(todayStr)),
+          'hari': hariIndo,
+          'cash': paidAmount.toInt(),
+          'transfer_bca': 0,
+          'qris_dana': 0,
+          'denda': 0,
+          'kerusakan': 0,
+          'dp': 0,
+          'total_pemasukan': paidAmount.toInt(),
+          'created_by': uid,
+          'created_by_name': userName,
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp(),
+          'keterangan_pelunasan': utangPiutang.status == 'lunas'
+              ? 'Pelunasan piutang: ${utangPiutang.nama}'
+              : 'DP piutang: ${utangPiutang.nama}',
+        });
+      } else {
+        // Utang DP/Full payment → we pay supplier → Pengeluaran
+        final pengeluaranRef = _firestore.collection('pengeluaran').doc();
+        batch.set(pengeluaranRef, {
+          'nama_barang': utangPiutang.status == 'lunas'
+              ? 'Pelunasan utang: ${utangPiutang.nama}'
+              : 'DP utang: ${utangPiutang.nama}',
+          'nominal': paidAmount.toInt(),
+          'keterangan': utangPiutang.status == 'lunas'
+              ? 'Pelunasan otomatis utang kepada ${utangPiutang.nama}'
+              : 'DP otomatis utang kepada ${utangPiutang.nama}',
+          'kategori': 'Lainnya',
+          'tanggal': Timestamp.fromDate(DateTime.parse(todayStr)),
+          'created_by': uid,
+          'created_by_name': userName,
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+      final doc = await docRef.get();
+      return {
+        'createdItem': _mapFromFirestore(doc, userName),
+        'settlementCreated': true,
+        'settlementType': (tipe == 'piutang' || tipe == 'customer') ? 'pemasukan' : 'pengeluaran',
+        'settlementAmount': paidAmount,
+      };
+    } else {
+      // Normal creation without payment
+      final docRef = await _ref.add(data);
+      final doc = await docRef.get();
+      return {
+        'createdItem': _mapFromFirestore(doc, userName),
+        'settlementCreated': false,
+        'settlementType': null,
+        'settlementAmount': 0.0,
+      };
+    }
+  }
+
   /// PUT /update a utang_piutang record
   Future<UtangPiutangModel> update(String id, UtangPiutangModel utangPiutang) async {
     final uid = _auth.currentUser?.uid;

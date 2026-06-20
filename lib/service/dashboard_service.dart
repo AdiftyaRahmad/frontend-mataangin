@@ -9,8 +9,21 @@ class DashboardService {
 
   /// GET dashboard data computed from Cloud Firestore collections
   Future<DashboardModel> getDashboard() async {
-    final pemasukanSnap = await _firestore.collection('pemasukan').get();
-    final pengeluaranSnap = await _firestore.collection('pengeluaran').get();
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 1).subtract(const Duration(milliseconds: 1));
+
+    final pemasukanSnap = await _firestore
+        .collection('pemasukan')
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where('tanggal', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+        .get();
+
+    final pengeluaranSnap = await _firestore
+        .collection('pengeluaran')
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where('tanggal', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+        .get();
     
     double totalPemasukan = 0.0;
     for (var doc in pemasukanSnap.docs) {

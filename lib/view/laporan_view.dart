@@ -75,6 +75,14 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 28),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_outlined, color: Colors.white70),
+            tooltip: 'Refresh Laporan',
+            onPressed: () {
+              _loadHarian();
+              _loadBulanan();
+            },
+          ),
           AdminOnlyWidget(
             child: IconButton(
               icon: vm.isExporting
@@ -182,7 +190,15 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
           Expanded(child: _buildErrorWidget(vm.harianError ?? 'Gagal memuat', _loadHarian))
         else ...[
           _buildSummaryCards(vm.laporanHarian, fmt),
-          Expanded(child: _buildTransactionList(vm.laporanHarian.transaksi, fmt)),
+          Expanded(
+            child: _buildTransactionList(
+              vm.laporanHarian.transaksi,
+              fmt,
+              () async {
+                _loadHarian();
+              },
+            ),
+          ),
         ]
       ],
     );
@@ -253,7 +269,15 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
           Expanded(child: _buildErrorWidget(vm.bulananError ?? 'Gagal memuat', _loadBulanan))
         else ...[
           _buildSummaryCards(vm.laporanBulanan, fmt),
-          Expanded(child: _buildTransactionList(vm.laporanBulanan.transaksi, fmt)),
+          Expanded(
+            child: _buildTransactionList(
+              vm.laporanBulanan.transaksi,
+              fmt,
+              () async {
+                _loadBulanan();
+              },
+            ),
+          ),
         ]
       ],
     );
@@ -320,91 +344,120 @@ class _LaporanViewState extends State<LaporanView> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildTransactionList(List<LaporanItem> items, NumberFormat fmt) {
+  Widget _buildTransactionList(List<LaporanItem> items, NumberFormat fmt, Future<void> Function() onRefresh) {
     if (items.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        color: const Color(0xFF1598A3),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            Icon(Icons.inbox_outlined, size: 48, color: Colors.white30),
-            SizedBox(height: 12),
-            Text('Tidak ada riwayat transaksi', style: TextStyle(color: Colors.white38)),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.inbox_outlined, size: 48, color: Colors.white30),
+                    SizedBox(height: 12),
+                    Text('Tidak ada riwayat transaksi', style: TextStyle(color: Colors.white38)),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: items.length,
-      itemBuilder: (_, i) {
-        final item = items[i];
-        final isIncome = item.jenis == 'pemasukan';
-        final color = isIncome ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: const Color(0xFF1598A3),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: items.length,
+        itemBuilder: (_, i) {
+          final item = items[i];
+          final isIncome = item.jenis == 'pemasukan';
+          final color = isIncome ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(14),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    isIncome ? Icons.trending_up : Icons.trending_down,
+                    color: color,
+                    size: 18,
+                  ),
                 ),
-                child: Icon(
-                  isIncome ? Icons.trending_up : Icons.trending_down,
-                  color: color,
-                  size: 18,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.judul,
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.tanggal,
+                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.judul,
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.tanggal,
-                      style: const TextStyle(color: Colors.white38, fontSize: 10),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Text(
+                  '${isIncome ? '+' : '-'} ${fmt.format(item.jumlah)}',
+                  style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${isIncome ? '+' : '-'} ${fmt.format(item.jumlah)}',
-                style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildErrorWidget(String message, VoidCallback onRetry) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return RefreshIndicator(
+      onRefresh: () async => onRetry(),
+      color: const Color(0xFF1598A3),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 44),
-          const SizedBox(height: 12),
-          Text(message, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: onRetry,
-            child: const Text('Coba Lagi'),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.4,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 44),
+                  const SizedBox(height: 12),
+                  Text(message, style: const TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: onRetry,
+                    child: const Text('Coba Lagi'),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

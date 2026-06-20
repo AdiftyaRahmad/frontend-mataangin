@@ -51,12 +51,18 @@ class _DashboardViewState extends State<DashboardView> {
       backgroundColor: _kBg,
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          _HomeTab(),
-          PemasukanView(),
-          PengeluaranView(),
-          UtangPiutangView(),
-          LaporanView(),
+        children: [
+          const _HomeTab(),
+          const PemasukanView(),
+          const PengeluaranView(),
+          UtangPiutangView(
+            onNavigateTab: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+          ),
+          const LaporanView(),
         ],
       ),
       bottomNavigationBar: _BottomNav(
@@ -168,6 +174,7 @@ class _HomeTab extends StatelessWidget {
           judul: 'Pemasukan - ${e.hari} (Shift ${e.shift})',
           jumlah: e.totalPemasukan,
           tanggal: e.tanggal,
+          createdAt: e.createdAt,
           isIncome: true,
         ),
       ),
@@ -176,12 +183,13 @@ class _HomeTab extends StatelessWidget {
           judul: '${e.namaBarang} (Shift ${e.shift})',
           jumlah: e.nominal,
           tanggal: e.tanggal,
+          createdAt: e.createdAt,
           isIncome: false,
         ),
       ),
     ];
 
-    allTx.sort((a, b) => (b.tanggal ?? '').compareTo(a.tanggal ?? ''));
+    allTx.sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
 
     final recentTx = allTx.take(5).toList();
 
@@ -228,6 +236,18 @@ class _HomeTab extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                onPressed: () {
+                  context.read<DashboardViewModel>().loadDashboard();
+                  context.read<PemasukanViewModel>().loadAll();
+                  context.read<PengeluaranViewModel>().loadAll();
+                },
+              ),
+              IconButton(
+                icon: const Icon(
                   Icons.logout_rounded,
                   color: Colors.white,
                   size: 22,
@@ -249,10 +269,20 @@ class _HomeTab extends StatelessWidget {
 
         // ── Scrollable Body ──────────────────────────────────────────────────
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          child: RefreshIndicator(
+            color: _kTeal,
+            onRefresh: () async {
+              await Future.wait([
+                context.read<DashboardViewModel>().loadDashboard(),
+                context.read<PemasukanViewModel>().loadAll(),
+                context.read<PengeluaranViewModel>().loadAll(),
+              ]);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ── Saldo Card ───────────────────────────────────────────────
                 if (dashVm.isLoading)
@@ -335,8 +365,9 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
         ),
-      ],
-    );
+      ),
+    ],
+  );
   }
 }
 
@@ -487,11 +518,13 @@ class _TxData {
   final String judul;
   final double jumlah;
   final String? tanggal;
+  final String? createdAt;
   final bool isIncome;
   const _TxData({
     required this.judul,
     required this.jumlah,
     this.tanggal,
+    this.createdAt,
     required this.isIncome,
   });
 }
