@@ -62,44 +62,64 @@ class PengeluaranView extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // Total Card
           Container(
             margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             decoration: BoxDecoration(
-              color: const Color(0xFFB32626),
-              borderRadius: BorderRadius.circular(24),
+              color: const Color(0xFF153F44),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.trending_down,
-                      color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: 18),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Total Pengeluaran',
+                        'TOTAL HARIAN',
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        fmt.format(vm.totalPengeluaran),
+                        fmt.format(vm.totalHarian),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 26,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: Colors.white24,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'TOTAL BULANAN',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        fmt.format(vm.totalBulanan),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -145,7 +165,7 @@ class PengeluaranView extends StatelessWidget {
         ),
       );
     }
-    if (vm.list.isEmpty) {
+    if (vm.filteredList.isEmpty) {
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -162,9 +182,9 @@ class PengeluaranView extends StatelessWidget {
     }
     return ListView.builder(
       padding: const EdgeInsets.only(top: 8, bottom: 88, left: 16, right: 16),
-      itemCount: vm.list.length,
+      itemCount: vm.filteredList.length,
       itemBuilder: (_, i) {
-        final item = vm.list[i];
+        final item = vm.filteredList[i];
         return _PengeluaranCard(
           item: item,
           fmt: fmt,
@@ -184,7 +204,9 @@ class PengeluaranView extends StatelessWidget {
       text: item != null ? _formatRibuan(item.cash.toStringAsFixed(0)) : '0',
     );
     final transferCtrl = TextEditingController(
-      text: item != null ? _formatRibuan(item.transfer.toStringAsFixed(0)) : '0',
+      text: item != null
+          ? _formatRibuan(item.transfer.toStringAsFixed(0))
+          : '0',
     );
     final qrisCtrl = TextEditingController(
       text: item != null ? _formatRibuan(item.qris.toStringAsFixed(0)) : '0',
@@ -261,7 +283,9 @@ class PengeluaranView extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          item == null ? 'Tambah Pengeluaran' : 'Edit Pengeluaran',
+                          item == null
+                              ? 'Tambah Pengeluaran'
+                              : 'Edit Pengeluaran',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -269,9 +293,13 @@ class PengeluaranView extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                           onPressed: () => Navigator.pop(sheetCtx),
-                        )
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -285,13 +313,14 @@ class PengeluaranView extends StatelessWidget {
                                 context: sheetCtx,
                                 initialDate:
                                     DateTime.tryParse(tanggalCtrl.text) ??
-                                        DateTime.now(),
+                                    DateTime.now(),
                                 firstDate: DateTime(2020),
                                 lastDate: DateTime(2100),
                               );
                               if (date != null) {
-                                final newDateStr =
-                                    DateFormat('yyyy-MM-dd').format(date);
+                                final newDateStr = DateFormat(
+                                  'yyyy-MM-dd',
+                                ).format(date);
                                 setModalState(() {
                                   tanggalCtrl.text = newDateStr;
                                   currentHari = getHariIndo(newDateStr);
@@ -300,7 +329,9 @@ class PengeluaranView extends StatelessWidget {
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 14),
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF1598A3),
                                 borderRadius: BorderRadius.circular(12),
@@ -319,7 +350,9 @@ class PengeluaranView extends StatelessWidget {
                         const SizedBox(width: 14),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 14),
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF262E3B),
                             borderRadius: BorderRadius.circular(12),
@@ -363,7 +396,10 @@ class PengeluaranView extends StatelessWidget {
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: const Color(0xFF1598A3),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -411,11 +447,12 @@ class PengeluaranView extends StatelessWidget {
                     _formField(
                       namaBarangCtrl,
                       'Nama Barang',
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Nama barang wajib diisi' : null,
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'Nama barang wajib diisi'
+                          : null,
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // ── Kategori Dropdown ──────────────────────────────────
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,7 +479,10 @@ class PengeluaranView extends StatelessWidget {
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: const Color(0xFF1598A3),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -451,7 +491,9 @@ class PengeluaranView extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                            errorStyle: const TextStyle(color: Color(0xFFFCA5A5)),
+                            errorStyle: const TextStyle(
+                              color: Color(0xFFFCA5A5),
+                            ),
                           ),
                           selectedItemBuilder: (BuildContext context) {
                             return categories.map((cat) {
@@ -483,7 +525,9 @@ class PengeluaranView extends StatelessWidget {
                               setModalState(() => selectedKategori = val);
                             }
                           },
-                          validator: (v) => v == null || v.isEmpty ? 'Kategori wajib dipilih' : null,
+                          validator: (v) => v == null || v.isEmpty
+                              ? 'Kategori wajib dipilih'
+                              : null,
                         ),
                       ],
                     ),
@@ -506,7 +550,9 @@ class PengeluaranView extends StatelessWidget {
                             cashCtrl,
                             'Cash',
                             keyboardType: TextInputType.number,
-                            inputFormatters: [ThousandsSeparatorInputFormatter()],
+                            inputFormatters: [
+                              ThousandsSeparatorInputFormatter(),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -515,7 +561,9 @@ class PengeluaranView extends StatelessWidget {
                             transferCtrl,
                             'Transfer',
                             keyboardType: TextInputType.number,
-                            inputFormatters: [ThousandsSeparatorInputFormatter()],
+                            inputFormatters: [
+                              ThousandsSeparatorInputFormatter(),
+                            ],
                           ),
                         ),
                       ],
@@ -538,10 +586,23 @@ class PengeluaranView extends StatelessWidget {
                             ? null
                             : () async {
                                 if (!formKey.currentState!.validate()) return;
-                                final pengeluaranVm = ctx.read<PengeluaranViewModel>();
-                                final double c = double.tryParse(cashCtrl.text.replaceAll('.', '')) ?? 0.0;
-                                final double t = double.tryParse(transferCtrl.text.replaceAll('.', '')) ?? 0.0;
-                                final double q = double.tryParse(qrisCtrl.text.replaceAll('.', '')) ?? 0.0;
+                                final pengeluaranVm = ctx
+                                    .read<PengeluaranViewModel>();
+                                final double c =
+                                    double.tryParse(
+                                      cashCtrl.text.replaceAll('.', ''),
+                                    ) ??
+                                    0.0;
+                                final double t =
+                                    double.tryParse(
+                                      transferCtrl.text.replaceAll('.', ''),
+                                    ) ??
+                                    0.0;
+                                final double q =
+                                    double.tryParse(
+                                      qrisCtrl.text.replaceAll('.', ''),
+                                    ) ??
+                                    0.0;
                                 final double total = c + t + q;
 
                                 final data = PengeluaranModel(
@@ -560,16 +621,25 @@ class PengeluaranView extends StatelessWidget {
                                 );
                                 final success = item == null
                                     ? await pengeluaranVm.create(data)
-                                    : await pengeluaranVm.update(item.id!, data);
+                                    : await pengeluaranVm.update(
+                                        item.id!,
+                                        data,
+                                      );
                                 if (sheetCtx.mounted) {
                                   Navigator.pop(sheetCtx);
                                   if (success) {
-                                    sheetCtx.read<DashboardViewModel>().loadDashboard();
+                                    sheetCtx
+                                        .read<DashboardViewModel>()
+                                        .loadDashboard();
                                   } else {
                                     ScaffoldMessenger.of(sheetCtx).showSnackBar(
                                       SnackBar(
-                                        content: Text(vm.errorMessage ?? 'Gagal menyimpan'),
-                                        backgroundColor: const Color(0xFFEF4444),
+                                        content: Text(
+                                          vm.errorMessage ?? 'Gagal menyimpan',
+                                        ),
+                                        backgroundColor: const Color(
+                                          0xFFEF4444,
+                                        ),
                                       ),
                                     );
                                   }
@@ -647,8 +717,6 @@ class PengeluaranView extends StatelessWidget {
       }
     }
   }
-
-
 }
 
 Widget _formField(
@@ -685,7 +753,10 @@ Widget _formField(
         decoration: InputDecoration(
           filled: true,
           fillColor: const Color(0xFF1598A3),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -754,7 +825,10 @@ class _PengeluaranCard extends StatelessWidget {
                 if (item.kategori != null && item.kategori!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1598A3).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
@@ -794,10 +868,7 @@ class _PengeluaranCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     item.keterangan!,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ],
@@ -817,11 +888,20 @@ class _PengeluaranCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               if (item.cash > 0)
-                Text('Cash: ${fmt.format(item.cash)}', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                Text(
+                  'Cash: ${fmt.format(item.cash)}',
+                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                ),
               if (item.transfer > 0)
-                Text('TF: ${fmt.format(item.transfer)}', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                Text(
+                  'TF: ${fmt.format(item.transfer)}',
+                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                ),
               if (item.qris > 0)
-                Text('QRIS: ${fmt.format(item.qris)}', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                Text(
+                  'QRIS: ${fmt.format(item.qris)}',
+                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                ),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -863,7 +943,9 @@ class _PengeluaranCard extends StatelessWidget {
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (newValue.text.isEmpty) {
       return newValue.copyWith(text: '');
     }
@@ -885,7 +967,12 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
     final String reversed = cleanText.split('').reversed.join('');
     final List<String> chunks = [];
     for (int i = 0; i < reversed.length; i += 3) {
-      chunks.add(reversed.substring(i, i + 3 < reversed.length ? i + 3 : reversed.length));
+      chunks.add(
+        reversed.substring(
+          i,
+          i + 3 < reversed.length ? i + 3 : reversed.length,
+        ),
+      );
     }
     final String formatted = chunks.join('.').split('').reversed.join('');
 
@@ -899,7 +986,8 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
 
     int newSelectionIndex = 0;
     int digitCount = 0;
-    while (digitCount < digitsBeforeCursor && newSelectionIndex < formatted.length) {
+    while (digitCount < digitsBeforeCursor &&
+        newSelectionIndex < formatted.length) {
       if (RegExp(r'[0-9]').hasMatch(formatted[newSelectionIndex])) {
         digitCount++;
       }
@@ -919,7 +1007,9 @@ String _formatRibuan(String s) {
   final reversed = clean.split('').reversed.join('');
   final List<String> chunks = [];
   for (int i = 0; i < reversed.length; i += 3) {
-    chunks.add(reversed.substring(i, i + 3 < reversed.length ? i + 3 : reversed.length));
+    chunks.add(
+      reversed.substring(i, i + 3 < reversed.length ? i + 3 : reversed.length),
+    );
   }
   return chunks.join('.').split('').reversed.join('');
 }

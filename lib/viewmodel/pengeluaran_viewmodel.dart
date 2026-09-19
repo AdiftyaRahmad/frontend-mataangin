@@ -14,7 +14,7 @@ class PengeluaranViewModel extends ChangeNotifier {
   bool _mutating = false;
 
   PengeluaranViewModel({PengeluaranRepository? repository})
-      : _repository = repository ?? PengeluaranRepository();
+    : _repository = repository ?? PengeluaranRepository();
 
   ViewState get state => _state;
   List<PengeluaranModel> get list => List.unmodifiable(_list);
@@ -22,8 +22,33 @@ class PengeluaranViewModel extends ChangeNotifier {
   bool get isLoading => _state == ViewState.loading;
   bool get isMutating => _mutating;
 
-  double get totalPengeluaran =>
-      _list.fold(0.0, (sum, item) => sum + item.nominal);
+  // Helper getters for totals
+  double get totalHarian {
+    final now = DateTime.now();
+    final todayStr =
+        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    return _list
+        .where((item) => item.tanggal == todayStr)
+        .fold(0.0, (sum, item) => sum + item.nominal);
+  }
+
+  double get totalBulanan {
+    final now = DateTime.now();
+    final monthStr = "${now.year}-${now.month.toString().padLeft(2, '0')}";
+    return _list
+        .where((item) => item.tanggal.startsWith(monthStr))
+        .fold(0.0, (sum, item) => sum + item.nominal);
+  }
+
+  // Only for backwards compatibility if needed, but UI will use totalHarian & totalBulanan
+  double get totalPengeluaran => totalHarian;
+
+  // Riwayat inputan di-reset per bulan (menampilkan transaksi bulan ini)
+  List<PengeluaranModel> get filteredList {
+    final now = DateTime.now();
+    final monthStr = "${now.year}-${now.month.toString().padLeft(2, '0')}";
+    return _list.where((item) => item.tanggal.startsWith(monthStr)).toList();
+  }
 
   Future<void> loadAll() async {
     _state = ViewState.loading;
