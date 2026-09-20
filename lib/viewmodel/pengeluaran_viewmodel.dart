@@ -13,11 +13,17 @@ class PengeluaranViewModel extends ChangeNotifier {
   String? _errorMessage;
   bool _mutating = false;
 
+  DateTime? _filterStartDate;
+  DateTime? _filterEndDate;
+
   PengeluaranViewModel({PengeluaranRepository? repository})
     : _repository = repository ?? PengeluaranRepository();
 
   ViewState get state => _state;
   List<PengeluaranModel> get list => List.unmodifiable(_list);
+  DateTime? get filterStartDate => _filterStartDate;
+  DateTime? get filterEndDate => _filterEndDate;
+  bool get isFiltered => _filterStartDate != null || _filterEndDate != null;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _state == ViewState.loading;
   bool get isMutating => _mutating;
@@ -43,11 +49,38 @@ class PengeluaranViewModel extends ChangeNotifier {
   // Only for backwards compatibility if needed, but UI will use totalHarian & totalBulanan
   double get totalPengeluaran => totalHarian;
 
-  // Riwayat inputan di-reset per bulan (menampilkan transaksi bulan ini)
   List<PengeluaranModel> get filteredList {
-    final now = DateTime.now();
-    final monthStr = "${now.year}-${now.month.toString().padLeft(2, '0')}";
-    return _list.where((item) => item.tanggal.startsWith(monthStr)).toList();
+    if (_filterStartDate == null && _filterEndDate == null) {
+      return List.unmodifiable(_list);
+    }
+    final start = _filterStartDate != null
+        ? DateTime(_filterStartDate!.year, _filterStartDate!.month, _filterStartDate!.day)
+        : null;
+    final end = _filterEndDate != null
+        ? DateTime(_filterEndDate!.year, _filterEndDate!.month, _filterEndDate!.day)
+        : null;
+
+    return _list.where((item) {
+      final dt = DateTime.tryParse(item.tanggal);
+      if (dt == null) return false;
+      final dateOnly = DateTime(dt.year, dt.month, dt.day);
+
+      if (start != null && dateOnly.isBefore(start)) return false;
+      if (end != null && dateOnly.isAfter(end)) return false;
+      return true;
+    }).toList();
+  }
+
+  void applyFilter(DateTime? start, DateTime? end) {
+    _filterStartDate = start;
+    _filterEndDate = end;
+    notifyListeners();
+  }
+
+  void clearFilter() {
+    _filterStartDate = null;
+    _filterEndDate = null;
+    notifyListeners();
   }
 
   Future<void> loadAll() async {

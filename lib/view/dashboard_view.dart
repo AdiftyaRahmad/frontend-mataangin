@@ -302,10 +302,19 @@ class _HomeTab extends StatelessWidget {
                     fmt: fmt,
                   ),
                   const SizedBox(height: 16),
-                  _ExpenseBreakdownCard(
-                    pengeluaranList: pengeluaranVm.list,
-                    totalPengeluaran: dashVm.dashboard.totalPengeluaran,
-                    fmt: fmt,
+                  Builder(
+                    builder: (context) {
+                      final now = DateTime.now();
+                      final monthlyPengeluaran = pengeluaranVm.list.where((item) {
+                        final dt = DateTime.tryParse(item.tanggal);
+                        return dt != null && dt.year == now.year && dt.month == now.month;
+                      }).toList();
+                      return _ExpenseBreakdownCard(
+                        pengeluaranList: monthlyPengeluaran,
+                        totalPengeluaran: dashVm.dashboard.totalPengeluaran,
+                        fmt: fmt,
+                      );
+                    },
                   ),
                 ],
 

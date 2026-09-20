@@ -7,6 +7,7 @@ import '../model/pengeluaran_model.dart';
 import '../viewmodel/pengeluaran_viewmodel.dart';
 import '../viewmodel/dashboard_viewmodel.dart';
 import '../core/widgets/admin_only_widget.dart';
+import 'widget/date_range_filter.dart';
 
 class PengeluaranView extends StatelessWidget {
   const PengeluaranView({super.key});
@@ -129,6 +130,19 @@ class PengeluaranView extends StatelessWidget {
               ],
             ),
           ),
+
+          // ── Filter Card ─────────────────────────────────────────────────
+          DateRangeFilter(
+            initialStartDate: vm.filterStartDate,
+            initialEndDate: vm.filterEndDate,
+            onFilter: (start, end) {
+              context.read<PengeluaranViewModel>().applyFilter(start, end);
+            },
+            onReset: () {
+              context.read<PengeluaranViewModel>().clearFilter();
+            },
+          ),
+
           Expanded(child: _buildList(context, vm, fmt)),
         ],
       ),
@@ -165,16 +179,19 @@ class PengeluaranView extends StatelessWidget {
         ),
       );
     }
-    if (vm.filteredList.isEmpty) {
-      return const Center(
+    final displayList = vm.filteredList;
+    if (displayList.isEmpty) {
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_outlined, size: 56, color: Colors.white30),
-            SizedBox(height: 12),
+            const Icon(Icons.inbox_outlined, size: 56, color: Colors.white30),
+            const SizedBox(height: 12),
             Text(
-              'Belum ada data pengeluaran',
-              style: TextStyle(color: Colors.white38),
+              vm.isFiltered
+                  ? 'Tidak ada data pengeluaran pada rentang tanggal ini'
+                  : 'Belum ada data pengeluaran',
+              style: const TextStyle(color: Colors.white38),
             ),
           ],
         ),
@@ -182,9 +199,9 @@ class PengeluaranView extends StatelessWidget {
     }
     return ListView.builder(
       padding: const EdgeInsets.only(top: 8, bottom: 88, left: 16, right: 16),
-      itemCount: vm.filteredList.length,
+      itemCount: displayList.length,
       itemBuilder: (_, i) {
-        final item = vm.filteredList[i];
+        final item = displayList[i];
         return _PengeluaranCard(
           item: item,
           fmt: fmt,
