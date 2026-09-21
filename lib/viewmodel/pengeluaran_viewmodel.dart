@@ -49,6 +49,9 @@ class PengeluaranViewModel extends ChangeNotifier {
   // Only for backwards compatibility if needed, but UI will use totalHarian & totalBulanan
   double get totalPengeluaran => totalHarian;
 
+  double get totalFilter =>
+      filteredList.fold(0.0, (sum, item) => sum + item.nominal);
+
   List<PengeluaranModel> get filteredList {
     if (_filterStartDate == null && _filterEndDate == null) {
       return List.unmodifiable(_list);
