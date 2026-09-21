@@ -77,9 +77,9 @@ class PengeluaranView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'TOTAL HARIAN',
-                        style: TextStyle(
+                      Text(
+                        vm.isFiltered ? 'TOTAL PENGELUARAN' : 'TOTAL HARIAN',
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -87,7 +87,9 @@ class PengeluaranView extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        fmt.format(vm.totalHarian),
+                        fmt.format(
+                          vm.isFiltered ? vm.totalFilter : vm.totalHarian,
+                        ),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -97,36 +99,38 @@ class PengeluaranView extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: Colors.white24,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'TOTAL BULANAN',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        fmt.format(vm.totalBulanan),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                if (!vm.isFiltered) ...[
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: Colors.white24,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
                   ),
-                ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'TOTAL BULANAN',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          fmt.format(vm.totalBulanan),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
